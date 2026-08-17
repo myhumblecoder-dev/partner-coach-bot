@@ -12,3 +12,100 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+model Profile {
+  id           String        @id @default(cuid())
+  name         String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  likes        LikesEntry[]
+  dislikes     DislikesEntry[]
+  jokes        Joke[]
+  moods        Mood[]
+  events       Event[]
+  gifts        Gift[]
+  trips        Trip[]
+  dreams       Dream[]
+  suggestions  Suggestion[]
+}
+
+model LikesEntry {
+  id        String   @id @default(cuid())
+  profileId String
+  text      String
+  createdAt DateTime @default(now())
+  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+model DislikesEntry {
+  id        String   @id @default(cuid())
+  profileId String
+  text      String
+  createdAt DateTime @default(now())
+  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+model Joke {
+  id        String   @id @default(cuid())
+  profileId String
+  text      String
+  createdAt DateTime @default(now())
+  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+model Mood {
+  id         String   @id @default(cuid())
+  profileId  String
+  label      String
+  note       String?
+  recordedAt DateTime @default(now())
+  profile    Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+model Event {
+  id         String   @id @default(cuid())
+  profileId  String
+  title      String
+  occurredAt DateTime
+  note       String?
+  createdAt  DateTime @default(now())
+  profile    Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+model Gift {
+  id          String    @id @default(cuid())
+  profileId   String
+  description String
+  givenAt     DateTime?
+  createdAt   DateTime  @default(now())
+  profile     Profile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+model Trip {
+  id          String    @id @default(cuid())
+  profileId   String
+  destination String
+  startDate   DateTime?
+  endDate     DateTime?
+  note        String?
+  createdAt   DateTime  @default(now())
+  profile     Profile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+model Dream {
+  id          String   @id @default(cuid())
+  profileId   String
+  description String
+  createdAt   DateTime @default(now())
+  profile     Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+model Suggestion {
+  id        String   @id @default(cuid())
+  profileId String
+  body      String
+  audience  String   @default("private")
+  createdAt DateTime @default(now())
+  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
