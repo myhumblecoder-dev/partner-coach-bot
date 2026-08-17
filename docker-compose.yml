@@ -11,7 +11,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: partner_coach_bot
     ports:
-      - "5432:5432"
+      - "54CC:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -27,8 +27,13 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: "postgresql://postgres:postgres@db:5432/partner_coach_bot?schema=public"
+      AI_PROVIDER: "ollama"
+      OLLAMA_BASE_URL: "http://host.docker.internal:11434"
+      OLLAMA_MODEL: "gemma4:26b"
     ports:
       - "3000:3000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     # apply the schema on boot, then serve the production build
     command: sh -c "pnpm prisma db push --skip-generate && pnpm start"
 
