@@ -27,6 +27,11 @@ model Profile {
   trips        Trip[]
   dreams       Dream[]
   suggestions  Suggestion[]
+  telegramChats TelegramChat[]
+  messages     Message[]
+  questionnaireAnswers QuestionnaireAnswer[]
+  occasions    Occasion[]
+  cadenceRuns  CadenceRun[]
 }
 
 model LikesEntry {
@@ -105,8 +110,60 @@ model Suggestion {
   profileId String
   body      String
   audience  String   @default("private")
+  kind      String   @default("date")
   createdAt DateTime @default(now())
   profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+model TelegramChat {
+  id        String   @id @default(cuid())
+  chatId    String   @unique
+  profileId String
+  createdAt DateTime @default(now())
+  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  profileId String
+  role      String
+  text      String
+  createdAt DateTime @default(now())
+  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+model QuestionnaireAnswer {
+  id        String   @id @default(cuid())
+  profileId String
+  questionId String
+  answer    String
+  createdAt DateTime @default(now())
+  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, questionId])
+}
+
+model Occasion {
+  id           String   @id @default(cuid())
+  profileId    String
+  kind         String
+  label        String
+  month        Int
+  day          Int
+  leadTimeDays Int      @default(7)
+  createdAt    DateTime @default(now())
+  profile      Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+model CadenceRun {
+  id        String   @id @default(cuid())
+  profileId String
+  kind      String
+  ranOn     DateTime
+  createdAt DateTime @default(now())
+  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, kind, ranOn])
 }
 
 model User {
