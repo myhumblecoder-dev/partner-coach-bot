@@ -82,6 +82,7 @@ model Gift {
   profileId   String
   description String
   givenAt     DateTime?
+  howItLanded String?
   createdAt   DateTime  @default(now())
   profile     Profile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
 }
