@@ -1,108 +1,111 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { prisma } from '@/lib/db'
+import { generate } from '@/lib/ai'
+import { extractFacts } from '@/lib/extraction/extract'
 import { QUESTIONS } from '@/lib/questionnaire/questions'
 import { onboardingStep } from './step'
 
 vi.mock('@/lib/db', () => ({
   prisma: {
     profile: { findUnique: vi.fn(), update: vi.fn() },
-    questionnaireAnswer: { findMany: vi.fn(), create: vi.fn() },
-    likesEntry: { create: vi.fn() },
-    dislikesEntry: { create: vi.fn() },
-    joke: { create: vi.fn() },
-    mood: { create: vi.fn() },
-    dream: { create: vi.fn() },
-    event: { create: vi.fn() },
-    gift: { create: vi.fn() },
-    trip: { create: vi.fn() },
+    questionnaireAnswer: { findMany: vi.fn(), findFirst: vi.fn(), create: vi.fn() },
   },
 }))
+vi.mock('@/lib/ai', () => ({ generate: vi.fn() }))
+vi.mock('@/lib/extraction/extract', () => ({ extractFacts: vi.fn() }))
 // questions/flow are pure local modules — never mocked.
-
-const CREATES = () => [
-  prisma.questionnaireAnswer.create, prisma.likesEntry.create,
-  prisma.dislikesEntry.create, prisma.joke.create, prisma.mood.create,
-  prisma.dream.create, prisma.event.create, prisma.gift.create,
-  prisma.trip.create,
-]
 
 describe('onboardingStep', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(prisma.profile.update).mockResolvedValue({} as never)
     vi.mocked(prisma.questionnaireAnswer.findMany).mockResolvedValue([] as never)
+    vi.mocked(prisma.questionnaireAnswer.findFirst).mockResolvedValue(null)
     vi.mocked(prisma.questionnaireAnswer.create).mockResolvedValue({} as never)
-    vi.mocked(prisma.likesEntry.create).mockResolvedValue({} as never)
+    vi.mocked(extractFacts).mockResolvedValue(0)
+    // Default voice: the model hiccups, fallbacks carry the flow.
+    vi.mocked(generate).mockResolvedValue('')
   })
 
-  it('asks for the name first', async () => {
+  it('a first greeting earns the name question, not a name', async () => {
     vi.mocked(prisma.profile.findUnique).mockResolvedValue(
       { id: 'p1', name: 'Your person' } as never)
 
-    const reply = await onboardingStep('p1', '')
+    const reply = await onboardingStep('p1', 'Hi')
 
     expect(reply).toContain('name')
-    for (const fn of CREATES()) expect(fn).not.toHaveBeenCalled()
+    expect(prisma.profile.update).not.toHaveBeenCalled()
+    expect(prisma.questionnaireAnswer.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ questionId: 'partner-name' }),
+      }))
   })
 
-  it('stores the name and asks the first question', async () => {
+  it('extracts the name from a conversational reply', async () => {
     vi.mocked(prisma.profile.findUnique).mockResolvedValue(
       { id: 'p1', name: 'Your person' } as never)
+    vi.mocked(prisma.questionnaireAnswer.findFirst).mockResolvedValue(
+      { id: 'm1', questionId: 'partner-name' } as never)
+    vi.mocked(generate)
+      .mockResolvedValueOnce('Yoyo')  // name extraction
+      .mockResolvedValueOnce('')      // voice falls back
 
-    const reply = await onboardingStep('p1', 'Ada')
+    const reply = await onboardingStep('p1', 'Her name is Yoyo')
 
     expect(prisma.profile.update).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ name: 'Ada' }) }))
+      expect.objectContaining({ data: expect.objectContaining({ name: 'Yoyo' }) }))
     expect(reply).toContain(QUESTIONS[0].prompt)
   })
 
-  it('stores an answer to its field and asks the next question', async () => {
+  it('a correction is not a name — it earns a re-ask', async () => {
     vi.mocked(prisma.profile.findUnique).mockResolvedValue(
-      { id: 'p1', name: 'Ada' } as never)
+      { id: 'p1', name: 'Your person' } as never)
+    vi.mocked(prisma.questionnaireAnswer.findFirst).mockResolvedValue(
+      { id: 'm1', questionId: 'partner-name' } as never)
+    vi.mocked(generate)
+      .mockResolvedValueOnce('NONE')  // extraction sees no name given
+      .mockResolvedValueOnce('')      // voice falls back
 
-    const reply = await onboardingStep('p1', 'tea and rainy mornings')
+    const reply = await onboardingStep('p1', 'No her name is not Hi')
+
+    expect(prisma.profile.update).not.toHaveBeenCalled()
+    expect(reply).toContain('name')
+  })
+
+  it('an answer records progress and feeds extraction', async () => {
+    vi.mocked(prisma.profile.findUnique).mockResolvedValue(
+      { id: 'p1', name: 'Yoyo' } as never)
+
+    const reply = await onboardingStep('p1', 'she loves gardening and old films')
 
     expect(prisma.questionnaireAnswer.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({ questionId: QUESTIONS[0].id }),
       }))
-    // QUESTIONS[0].field is 'likes'
-    expect(prisma.likesEntry.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          profileId: 'p1',
-          text: 'tea and rainy mornings',
-        }),
-      }))
-    expect(reply).toBe(QUESTIONS[1].prompt)
+    expect(extractFacts).toHaveBeenCalledWith('p1', 'she loves gardening and old films')
+    expect(reply).toContain(QUESTIONS[1].prompt)
+  })
+
+  it('extraction failure never wedges the questionnaire', async () => {
+    vi.mocked(prisma.profile.findUnique).mockResolvedValue(
+      { id: 'p1', name: 'Yoyo' } as never)
+    vi.mocked(extractFacts).mockRejectedValue(new Error('model down'))
+
+    const reply = await onboardingStep('p1', 'she loves gardening')
+
+    expect(prisma.questionnaireAnswer.create).toHaveBeenCalled()
+    expect(reply).toContain(QUESTIONS[1].prompt)
   })
 
   it('hands over to the coach when complete', async () => {
     vi.mocked(prisma.profile.findUnique).mockResolvedValue(
-      { id: 'p1', name: 'Ada' } as never)
+      { id: 'p1', name: 'Yoyo' } as never)
     vi.mocked(prisma.questionnaireAnswer.findMany).mockResolvedValue(
       QUESTIONS.map((q) => ({ questionId: q.id })) as never)
 
     const reply = await onboardingStep('p1', 'anything')
 
     expect(reply).toBeNull()
-    for (const fn of CREATES()) expect(fn).not.toHaveBeenCalled()
+    expect(extractFacts).not.toHaveBeenCalled()
   })
-})
-
-it('answers carry questionnaire provenance', async () => {
-  // Top-level test: the describe's beforeEach does not apply here.
-  vi.clearAllMocks()
-  vi.mocked(prisma.profile.findUnique).mockResolvedValue(
-    { id: 'p1', name: 'Ada' } as never)
-  vi.mocked(prisma.questionnaireAnswer.findMany).mockResolvedValue([] as never)
-  vi.mocked(prisma.questionnaireAnswer.create).mockResolvedValue({} as never)
-  vi.mocked(prisma.likesEntry.create).mockResolvedValue({} as never)
-
-  await onboardingStep('p1', 'tea and rainy mornings')
-
-  expect(prisma.likesEntry.create).toHaveBeenCalledWith(
-    expect.objectContaining({
-      data: expect.objectContaining({ source: 'questionnaire' }),
-    }))
 })
