@@ -3,11 +3,11 @@
 import { useState } from 'react'
 import { addMood } from '@/app/actions/addMood'
 
-interface MoodFormProps {
-  profileId: string
-}
+const inputClass =
+  'w-full rounded-xl border border-line bg-paper px-3.5 py-2 text-sm text-ink ' +
+  'placeholder:text-ink-soft/70 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent'
 
-export default function MoodForm({ profileId }: MoodFormProps) {
+export default function MoodForm({ profileId }: { profileId: string }) {
   const [label, setLabel] = useState('')
   const [note, setNote] = useState('')
 
@@ -22,8 +22,8 @@ export default function MoodForm({ profileId }: MoodFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="flex flex-col gap-1">
-        <label htmlFor="mood-input" className="text-sm font-medium">
+      <div className="space-y-1.5">
+        <label htmlFor="mood-input" className="text-sm font-medium text-ink">
           Mood
         </label>
         <input
@@ -31,13 +31,14 @@ export default function MoodForm({ profileId }: MoodFormProps) {
           type="text"
           value={label}
           onChange={(e) => setLabel(e.target.value)}
-          className="rounded-md border border-gray-300 px-3 py-2 text-sm"
+          placeholder="content, stressed, playful…"
+          className={inputClass}
           required
         />
       </div>
 
-      <div className="flex flex-col gap-1">
-        <label htmlFor="note-input" className="text-sm font-medium">
+      <div className="space-y-1.5">
+        <label htmlFor="note-input" className="text-sm font-medium text-ink">
           Note
         </label>
         <input
@@ -45,13 +46,14 @@ export default function MoodForm({ profileId }: MoodFormProps) {
           type="text"
           value={note}
           onChange={(e) => setNote(e.target.value)}
-          className="rounded-md border border-gray-300 px-3 py/2 text-sm"
+          placeholder="what was happening?"
+          className={inputClass}
         />
       </div>
 
       <button
         type="submit"
-        className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+        className="rounded-xl bg-accent px-4 py-2 text-sm font-medium text-accent-ink transition-opacity hover:opacity-90"
       >
         Add mood
       </button>
