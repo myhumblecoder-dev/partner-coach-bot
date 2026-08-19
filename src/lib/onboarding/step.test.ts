@@ -86,6 +86,20 @@ describe('onboardingStep', () => {
     expect(reply).toContain(QUESTIONS[1].prompt)
   })
 
+  it('a question back is conversed with, not filed as an answer', async () => {
+    vi.mocked(prisma.profile.findUnique).mockResolvedValue(
+      { id: 'p1', name: 'Yoyo' } as never)
+    vi.mocked(generate)
+      .mockResolvedValueOnce('CHAT')  // turn understanding
+      .mockResolvedValueOnce('')      // voice falls back
+
+    const reply = await onboardingStep('p1', 'why do you need to know that?')
+
+    expect(prisma.questionnaireAnswer.create).not.toHaveBeenCalled()
+    expect(extractFacts).not.toHaveBeenCalled()
+    expect(reply).toContain(QUESTIONS[0].prompt)
+  })
+
   it('extraction failure never wedges the questionnaire', async () => {
     vi.mocked(prisma.profile.findUnique).mockResolvedValue(
       { id: 'p1', name: 'Yoyo' } as never)

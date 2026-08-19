@@ -30,6 +30,26 @@ async function extractName(text: string): Promise<string | null> {
   }
 }
 
+/** Is this turn an answer to the question, or the user talking TO the bot?
+ *
+ * Mid-questionnaire people ask things back ("why do you ask?"), and a
+ * question filed as an answer corrupts the portrait. On any doubt or model
+ * failure the verdict is 'answer' — progress bias, since a wrong 'chat'
+ * verdict would loop the same question forever.
+ */
+async function turnKind(question: string, reply: string): Promise<'answer' | 'chat'> {
+  try {
+    const raw = await generate(
+      `A user was asked: "${question}"\nThey wrote: "${reply}"\n\nIs their ` +
+      'message an ANSWER to the question, or are they asking something or ' +
+      'chatting with the assistant instead? Reply with exactly one word: ' +
+      'ANSWER or CHAT.')
+    return /^\s*chat\b/i.test(raw) ? 'chat' : 'answer'
+  } catch {
+    return 'answer'
+  }
+}
+
 /** A conversational line, with a plain fallback so onboarding never wedges
  * on a model hiccup. */
 async function say(instruction: string, fallback: string): Promise<string> {
@@ -93,6 +113,17 @@ export async function onboardingStep(
   const current = nextQuestion(answeredIds)
   if (current === null) {
     return null // questionnaire complete: the coach takes it from here
+  }
+
+  // Understand the turn before filing it.
+  if ((await turnKind(current.prompt, trimmed)) === 'chat') {
+    return say(
+      `You are a warm relationship coach in the middle of intake questions ` +
+      `about the user's partner. You asked: "${current.prompt}". Instead of ` +
+      `answering, the user said: "${trimmed}". Respond helpfully to what ` +
+      `they said in one or two short sentences, then gently return to the ` +
+      `question.`,
+      `Good question! ${current.prompt}`)
   }
 
   // Progress first — extraction may fail, and a wedged questionnaire is
