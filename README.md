@@ -1,30 +1,15 @@
-# Partner Coach Bot
+# cherish.ai
 
-## Problem Statement
+A study of someone you love. A Telegram coach that talks with you daily about
+your relationship, remembers everything — likes, moods, gifts, dreams, trips,
+running jokes — and a portrait UI that turns fifteen years of knowing someone
+into something you can see.
 
-A private Telegram relationship coach that learns Thomas's wife over years — her likes, dislikes, jokes, moods, dreams, events, gifts and trips — and coaches him with timely suggestions, plus a web portrait of her and metrics on how well he's studying.
+- **Coach**: Telegram bot (@cherish_ai_bot) — 12-question onboarding, daily /
+  weekly / monthly check-ins, occasion reminders, audience-tagged suggestions
+- **Portrait**: `/portrait` — mood timeline, gift ledger with outcomes, study
+  metrics (coverage, recency, gift success rate), inline editing
+- **Local dev**: `docker compose up` — Postgres + app + Mailpit inbox
+  (localhost:8025) for magic-link sign-in; coach runs on host Ollama
 
-## Solution Statement
-
-Telegram bot that learns your partner's preferences and coaches you with timely relationship suggestions plus web dashboard
-
-Built with Next.js (App Router, TypeScript), Tailwind, Prisma + PostgreSQL, and Zod.
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js + [pnpm](https://pnpm.io)
-- [Docker](https://www.docker.com) (for the local Postgres)
-
-### Run it locally
-
-```bash
-cp .env.example .env.local   # local secrets (gitignored); DATABASE_URL → compose Postgres
-docker compose up -d     # start Postgres on localhost:5432
-pnpm install
-pnpm prisma db push      # apply the Prisma schema
-pnpm dev                 # http://localhost:3000
-```
-
-Tear down the database with `docker compose down` (add `-v` to wipe its data).
+Deployment env: see `.env.example`.

@@ -48,6 +48,9 @@ export default function PortraitView({
   return (
     <main className="mx-auto max-w-5xl px-6 py-14 sm:px-10">
       <header className="mb-10">
+        <p className="mb-6 font-display text-sm italic text-ink-soft">
+          cherish<span className="text-accent">.ai</span>
+        </p>
         <p className="mb-2 text-xs font-semibold uppercase tracking-[0.3em] text-accent">
           A study of
         </p>

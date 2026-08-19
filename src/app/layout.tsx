@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "The Portrait",
+  title: "cherish.ai",
   description: "A study of someone you love",
 };
 
