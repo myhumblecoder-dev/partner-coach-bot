@@ -2,7 +2,7 @@ import type { Portrait } from '@/lib/portrait/load';
 import type { Coverage } from '@/lib/metrics/coverage';
 import type { GiftStats } from '@/lib/metrics/gifts';
 import type { MoodBucket } from '@/lib/metrics/moodBuckets';
-import PortraitSection from '@/components/PortraitSection';
+import EditableSection from '@/components/EditableSection';
 import MoodTimeline from '@/components/MoodTimeline';
 import StudyMetrics from '@/components/StudyMetrics';
 import GiftHistory from '@/components/GiftHistory';
@@ -72,18 +72,38 @@ export default function PortraitView({
         <div className="space-y-6 lg:col-span-3">
           <Card>
             <div className="space-y-7">
-              <PortraitSection title="Likes" items={portrait.likes} />
-              <PortraitSection title="Dislikes" items={portrait.dislikes} />
-              <PortraitSection title="Jokes" items={portrait.jokes} />
-              <PortraitSection
-                title="Dreams & Wishes"
-                items={portrait.dreams}
+              <EditableSection
+                title="Likes"
+                field="likes"
+                rows={portrait.entries?.likes ?? []}
               />
-              <PortraitSection title="Trips" items={portrait.trips} />
+              <EditableSection
+                title="Dislikes"
+                field="dislikes"
+                rows={portrait.entries?.dislikes ?? []}
+              />
+              <EditableSection
+                title="Jokes"
+                field="jokes"
+                rows={portrait.entries?.jokes ?? []}
+              />
+              <EditableSection
+                title="Dreams & Wishes"
+                field="dreams"
+                rows={portrait.entries?.dreams ?? []}
+              />
+              <EditableSection
+                title="Trips"
+                field="trips"
+                rows={portrait.entries?.trips ?? []}
+              />
             </div>
           </Card>
           <Card title="Gift ledger">
-            <GiftHistory gifts={portrait.gifts} />
+            <GiftHistory
+              gifts={portrait.gifts}
+              rows={portrait.entries?.gifts ?? []}
+            />
           </Card>
         </div>
 
