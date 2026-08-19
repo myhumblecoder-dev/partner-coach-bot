@@ -69,7 +69,10 @@ describe('onboardingStep', () => {
     // QUESTIONS[0].field is 'likes'
     expect(prisma.likesEntry.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: { profileId: 'p1', text: 'tea and rainy mornings' },
+        data: expect.objectContaining({
+          profileId: 'p1',
+          text: 'tea and rainy mornings',
+        }),
       }))
     expect(reply).toBe(QUESTIONS[1].prompt)
   })
@@ -85,4 +88,21 @@ describe('onboardingStep', () => {
     expect(reply).toBeNull()
     for (const fn of CREATES()) expect(fn).not.toHaveBeenCalled()
   })
+})
+
+it('answers carry questionnaire provenance', async () => {
+  // Top-level test: the describe's beforeEach does not apply here.
+  vi.clearAllMocks()
+  vi.mocked(prisma.profile.findUnique).mockResolvedValue(
+    { id: 'p1', name: 'Ada' } as never)
+  vi.mocked(prisma.questionnaireAnswer.findMany).mockResolvedValue([] as never)
+  vi.mocked(prisma.questionnaireAnswer.create).mockResolvedValue({} as never)
+  vi.mocked(prisma.likesEntry.create).mockResolvedValue({} as never)
+
+  await onboardingStep('p1', 'tea and rainy mornings')
+
+  expect(prisma.likesEntry.create).toHaveBeenCalledWith(
+    expect.objectContaining({
+      data: expect.objectContaining({ source: 'questionnaire' }),
+    }))
 })

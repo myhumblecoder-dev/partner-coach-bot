@@ -14,30 +14,30 @@ async function storeAnswer(
   })
   switch (question.field) {
     case 'likes':
-      await prisma.likesEntry.create({ data: { profileId, text } })
+      await prisma.likesEntry.create({ data: { profileId, text, source: 'questionnaire' } })
       break
     case 'dislikes':
-      await prisma.dislikesEntry.create({ data: { profileId, text } })
+      await prisma.dislikesEntry.create({ data: { profileId, text, source: 'questionnaire' } })
       break
     case 'jokes':
-      await prisma.joke.create({ data: { profileId, text } })
+      await prisma.joke.create({ data: { profileId, text, source: 'questionnaire' } })
       break
     case 'moods':
-      await prisma.mood.create({ data: { profileId, label: text } })
+      await prisma.mood.create({ data: { profileId, label: text, source: 'questionnaire' } })
       break
     case 'dreams':
-      await prisma.dream.create({ data: { profileId, description: text } })
+      await prisma.dream.create({ data: { profileId, description: text, source: 'questionnaire' } })
       break
     case 'events':
       await prisma.event.create({
-        data: { profileId, title: text, occurredAt: new Date() },
+        data: { profileId, title: text, occurredAt: new Date(), source: 'questionnaire' },
       })
       break
     case 'gifts':
-      await prisma.gift.create({ data: { profileId, description: text } })
+      await prisma.gift.create({ data: { profileId, description: text, source: 'questionnaire' } })
       break
     case 'trips':
-      await prisma.trip.create({ data: { profileId, destination: text } })
+      await prisma.trip.create({ data: { profileId, destination: text, source: 'questionnaire' } })
       break
   }
 }
