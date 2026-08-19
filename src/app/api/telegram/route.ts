@@ -2,7 +2,8 @@ import { verifyTelegramSecret } from '@/lib/telegram/verify';
 import { parseUpdate } from '@/lib/telegram/parse';
 import { sendMessage } from '@/lib/telegram/send';
 import { respond } from '@/lib/coach/respond';
-import { prisma } from '@/lib/db';
+import { ensureLinkedProfile } from '@/lib/onboarding/link';
+import { onboardingStep } from '@/lib/onboarding/step';
 
 export async function POST(request: Request): Promise<Response> {
   const secretToken = request.headers.get('x-telegram-bot-api-secret-token');
@@ -30,17 +31,21 @@ export async function POST(request: Request): Promise<Response> {
     return new Response(JSON.stringify({ ok: true }), { status: 200 });
   }
 
-  const chat = await prisma.telegramChat.findUnique({
-    where: { chatId },
-  });
+  const linked = await ensureLinkedProfile(chatId);
 
-  if (!chat) {
-    await sendMessage(chatId, "Please link your Telegram account to use this bot.");
+  if (linked) {
+    const { profileId } = linked;
+    const nextStepText = await onboardingStep(profileId, text);
+
+    if (nextStepText) {
+      await sendMessage(chatId, nextStepText);
+      return new Response(JSON.stringify({ ok: true }), { status: 200 });
+    }
+
+    const replyText = await respond(profileId, text);
+    await sendMessage(chatId, replyText);
     return new Response(JSON.stringify({ ok: true }), { status: 200 });
   }
-
-  const replyText = await respond(chat.profileId, text);
-  await sendMessage(chatId, replyText);
 
   return new Response(JSON.stringify({ ok: true }), { status: 200 });
 }
