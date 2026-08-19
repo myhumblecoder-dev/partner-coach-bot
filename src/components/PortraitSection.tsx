@@ -7,16 +7,26 @@ interface PortraitSectionProps {
 
 export default function PortraitSection({ title, items }: PortraitSectionProps) {
   return (
-    <section data-testid="portrait-section" className="space-y-4">
-      <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
+    <section data-testid="portrait-section">
+      <h2 className="mb-3 font-display text-lg text-ink">
+        {title}
+        <span className="ml-2 align-middle text-xs font-sans text-ink-soft">
+          {items.length > 0 ? items.length : ''}
+        </span>
+      </h2>
       {items.length > 0 ? (
-        <ul className="list-disc pl-5 space-y-2 text-gray-700">
+        <ul className="flex flex-wrap gap-2">
           {items.map((item, index) => (
-            <li key={index}>{item}</li>
+            <li
+              key={index}
+              className="rounded-full border border-line bg-paper px-3.5 py-1.5 text-sm leading-6 text-ink"
+            >
+              {item}
+            </li>
           ))}
         </ul>
       ) : (
-        <p className="text-gray-500 italic">Nothing here yet.</p>
+        <p className="text-sm italic text-ink-soft">Nothing here yet.</p>
       )}
     </section>
   );

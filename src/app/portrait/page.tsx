@@ -13,7 +13,17 @@ export default async function PortraitPage() {
   const profile = await prisma.profile.findFirst()
   const portrait = profile ? await getPortrait(profile.id) : null
   if (!profile || !portrait) {
-    return <p>No profile yet — start the questionnaire in Telegram.</p>
+    return (
+      <main className="mx-auto flex min-h-[60vh] max-w-xl flex-col items-center justify-center px-6 text-center">
+        <p className="font-display text-2xl text-ink">
+          No profile yet — start the questionnaire in Telegram.
+        </p>
+        <p className="mt-3 text-sm text-ink-soft">
+          The coach will ask twelve questions and build the portrait from your
+          answers.
+        </p>
+      </main>
+    )
   }
 
   const cov = coverage({
