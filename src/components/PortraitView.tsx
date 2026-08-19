@@ -18,6 +18,25 @@ interface PortraitViewProps {
   buckets: MoodBucket[];
 }
 
+function Card({
+  title,
+  children,
+}: {
+  title?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-2xl border border-line bg-card p-6 shadow-[0_1px_2px_rgba(43,34,38,0.06)]">
+      {title && (
+        <h2 className="mb-4 text-xs font-semibold uppercase tracking-[0.18em] text-ink-soft">
+          {title}
+        </h2>
+      )}
+      {children}
+    </div>
+  );
+}
+
 export default function PortraitView({
   portrait,
   profileId,
@@ -27,31 +46,57 @@ export default function PortraitView({
   buckets,
 }: PortraitViewProps) {
   return (
-    <div className="space-y-8">
-      <h1 className="text-3xl font-bold text-gray-900">{portrait.name}</h1>
+    <main className="mx-auto max-w-5xl px-6 py-14 sm:px-10">
+      <header className="mb-10">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.3em] text-accent">
+          A study of
+        </p>
+        <h1 className="font-display text-5xl tracking-tight sm:text-6xl">
+          {portrait.name}
+        </h1>
+        <div className="mt-6 h-px w-24 bg-accent/60" />
+      </header>
 
-      <StudyMetrics
-        coverage={coverage}
-        daysSinceTouch={daysSinceTouch}
-        gifts={giftStats}
-      />
-
-      <div className="space-y-4">
-        <PortraitSection title="Likes" items={portrait.likes} />
-        <PortraitSection title="Dislikes" items={portrait.dislikes} />
-        <PortraitSection title="Jokes" items={portrait.jokes} />
-        <PortraitSection title="Dreams & Wishes" items={portrait.dreams} />
-        <PortraitSection title="Trips" items={portrait.trips} />
+      <div className="mb-8">
+        <StudyMetrics
+          coverage={coverage}
+          daysSinceTouch={daysSinceTouch}
+          gifts={giftStats}
+        />
       </div>
 
-      <GiftHistory gifts={portrait.gifts} />
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
+        <div className="space-y-6 lg:col-span-3">
+          <Card>
+            <div className="space-y-7">
+              <PortraitSection title="Likes" items={portrait.likes} />
+              <PortraitSection title="Dislikes" items={portrait.dislikes} />
+              <PortraitSection title="Jokes" items={portrait.jokes} />
+              <PortraitSection
+                title="Dreams & Wishes"
+                items={portrait.dreams}
+              />
+              <PortraitSection title="Trips" items={portrait.trips} />
+            </div>
+          </Card>
+          <Card title="Gift ledger">
+            <GiftHistory gifts={portrait.gifts} />
+          </Card>
+        </div>
 
-      <MoodTimeline buckets={buckets} />
-
-      <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-        <MoodForm profileId={profileId} />
-        <EntryForm profileId={profileId} />
+        <div className="space-y-6 lg:col-span-2">
+          <Card title="Moods, lately">
+            <MoodTimeline buckets={buckets} />
+          </Card>
+          <Card title="Add to the study">
+            <div className="space-y-8">
+              <MoodForm profileId={profileId} />
+              <div className="h-px bg-line" />
+              <EntryForm profileId={profileId} />
+            </div>
+          </Card>
+        </div>
       </div>
-    </div>
+    </main>
   );
 }
