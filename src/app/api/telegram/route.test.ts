@@ -1,156 +1,77 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { prisma } from '@/lib/db'
-import type { TelegramChat } from '@prisma/client'
 import { POST } from './route'
 import { sendMessage } from '@/lib/telegram/send'
 import { respond } from '@/lib/coach/respond'
+import { ensureLinkedProfile } from '@/lib/onboarding/link'
+import { onboardingStep } from '@/lib/onboarding/step'
 
-vi.mock('@/lib/db', () => ({
-  prisma: {
-    profile: { create: vi.fn(), createMany: vi.fn(), findMany: vi.fn(), findUnique: vi.fn(), findFirst: vi.fn(), update: vi.fn(), updateMany: vi.fn(), delete: vi.fn(), deleteMany: vi.fn(), upsert: vi.fn(), count: vi.fn() },
-    likesEntry: { create: vi.fn(), createMany: vi.fn(), findMany: vi.fn(), findUnique: vi.fn(), findFirst: vi.fn(), update: vi.fn(), updateMany: vi.fn(), delete: vi.fn(), deleteMany: vi.fn(), upsert: vi.fn(), count: vi.fn() },
-    dislikesEntry: { create: vi.fn(), createMany: vi.fn(), findUnique: vi.fn(), findFirst: vi.fn(), update: vi.fn(), updateMany: vi.fn(), delete: vi.fn(), deleteMany: vi.fn(), upsert: vi.fn(), count: vi.fn() },
-    joke: { create: vi.fn(), createMany: vi.fn(), findUnique: vi.fn(), findFirst: vi.fn(), update: vi.fn(), updateMany: vi.fn(), delete: vi.fn(), deleteMany: vi.fn(), upsert: vi.fn(), count: vi.fn() },
-    mood: { create: vi.fn(), createMany: vi.fn(), findUnique: vi.fn(), findFirst: vi.fn(), update: vi.fn(), updateMany: vi.fn(), delete: vi.fn(), deleteMany: vi.fn(), upsert: vi.fn(), count: vi.fn() },
-    event: { create: vi.fn(), createMany: vi.fn(), findUnique: vi.fn(), findFirst: vi.fn(), update: vi.fn(), updateMany: vi.fn(), delete: vi.fn(), deleteMany: vi.fn(), upsert: vi.fn(), count: vi.fn() },
-    gift: { create: vi.fn(), createMany: vi.fn(), findUnique: vi.fn(), findFirst: vi.fn(), update: vi.fn(), updateMany: vi.fn(), delete: vi.fn(), deleteMany: vi.fn(), upsert: vi.fn(), count: vi.fn() },
-    trip: { create: vi.fn(), createMany: vi.fn(), findUnique: vi.fn(), findFirst: vi.fn(), update: vi.fn(), updateMany: vi.fn(), delete: vi.fn(), deleteMany: vi.fn(), upsert: vi.fn(), count: vi.fn() },
-    dream: { create: vi.fn(), createMany: vi.fn(), findUnique: vi.fn(), findFirst: vi.fn(), update: vi.fn(), updateMany: vi.fn(), delete: vi.fn(), deleteMany: vi.fn(), upsert: vi.fn(), count: vi.fn() },
-    suggestion: { create: vi.fn(), createMany: vi.fn(), findUnique: vi.fn(), findFirst: vi.fn(), update: vi.fn(), updateMany: vi.fn(), delete: vi.fn(), deleteMany: vi.fn(), upsert: vi.fn(), count: vi.fn() },
-    telegramChat: { create: vi.fn(), createMany: vi.fn(), findMany: vi.fn(), findUnique: vi.fn(), findFirst: vi.fn(), update: vi.fn(), updateMany: vi.fn(), delete: vi.fn(), deleteMany: vi.fn(), upsert: vi.fn(), count: vi.fn() },
-    message: { create: vi.fn(), createMany: vi.fn(), findUnique: vi.fn(), findFirst: vi.fn(), update: vi.fn(), updateMany: vi.fn(), delete: vi.fn(), deleteMany: vi.fn(), upsert: vi.fn(), count: vi.fn() },
-    questionnaireAnswer: { create: vi.fn(), createMany: vi.fn(), findUnique: vi.fn(), findFirst: vi.fn(), update: vi.fn(), updateMany: vi.fn(), delete: vi.fn(), deleteMany: vi.fn(), upsert: vi.fn(), count: vi.fn() },
-    occasion: { create: vi.fn(), createMany: vi.fn(), findUnique: vi.fn(), findFirst: vi.fn(), update: vi.fn(), updateMany: vi.fn(), delete: vi.fn(), deleteMany: vi.fn(), upsert: vi.fn(), count: vi.fn() },
-    cadenceRun: { create: vi.fn(), createMany: vi.fn(), findUnique: vi.fn(), findFirst: vi.fn(), update: vi.fn(), updateMany: vi.fn(), delete: vi.fn(), deleteMany: vi.fn(), upsert: vi.fn(), count: vi.fn() },
-    user: { create: vi.fn(), createMany: vi.fn(), findUnique: vi.fn(), findFirst: vi.fn(), update: vi.fn(), updateMany: vi.fn(), delete: vi.fn(), deleteMany: vi.fn(), upsert: vi.fn(), count: vi.fn() },
-    account: { create: vi.fn(), createMany: vi.fn(), findUnique: vi.fn(), findFirst: vi.fn(), update: vi.fn(), updateMany: vi.fn(), delete: vi.fn(), deleteMany: vi.fn(), upsert: vi.fn(), count: vi.fn() },
-    session: { create: vi.fn(), createMany: vi.fn(), findUnique: vi.fn(), findFirst: vi.fn(), update: vi.fn(), updateMany: vi.fn(), delete: vi.fn(), deleteMany: vi.fn(), upsert: vi.fn(), count: vi.fn() },
-    verificationToken: { create: vi.fn(), createMany: vi.fn(), findUnique: vi.fn(), findFirst: vi.fn(), update: vi.fn(), updateMany: vi.fn(), delete: vi.fn(), deleteMany: vi.fn(), upsert: vi.fn(), count: vi.fn() },
-  },
-}))
+vi.mock('@/lib/telegram/send', () => ({ sendMessage: vi.fn() }))
+vi.mock('@/lib/coach/respond', () => ({ respond: vi.fn() }))
+vi.mock('@/lib/onboarding/link', () => ({ ensureLinkedProfile: vi.fn() }))
+vi.mock('@/lib/onboarding/step', () => ({ onboardingStep: vi.fn() }))
+// verify and parse are pure local modules — never mocked; the 401 test
+// proves real rejection, not a mocked one.
 
-vi.mock('@/lib/telegram/send', () => ({
-  sendMessage: vi.fn(),
-}))
+function request(body: unknown, secret?: string): Request {
+  return new Request('http://localhost/api/telegram', {
+    method: 'POST',
+    headers: secret ? { 'x-telegram-bot-api-secret-token': secret } : {},
+    body: JSON.stringify(body),
+  })
+}
 
-vi.mock('@/lib/coach/respond', () => ({
-  respond: vi.fn(),
-}))
+const UPDATE = { message: { chat: { id: 6300285519 }, text: 'hello' } }
 
-const makeTelegramChat = (overrides: Partial<TelegramChat> = {}): TelegramChat =>
-  ({
-    id: '',
-    chatId: '',
-    profileId: '',
-    createdAt: new Date(Date.UTC(2024, 0, 1)),
-    ...overrides,
-  } as unknown as TelegramChat)
-
-describe('route', () => {
-  const WEBHOOK_SECRET = 'super-secret-token'
-  const VALID_HEADER = 'valid-token'
-  const INVALID_HEADER = 'wrong-token'
-
+describe('POST /api/telegram', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    process.env.TELEGRAM_WEBHOOK_SECRET = WEBHOOK_SECRET
+    process.env.TELEGRAM_WEBHOOK_SECRET = 'hooksecret'
+    vi.mocked(ensureLinkedProfile).mockResolvedValue({ profileId: 'p1', created: false })
+    vi.mocked(onboardingStep).mockResolvedValue(null)
+    vi.mocked(respond).mockResolvedValue('a coached reply')
   })
 
   it('rejects a request with the wrong secret', async () => {
-    const request = new Request('https://api.telegram.org/webhook', {
-      method: 'POST',
-      headers: {
-        'x-telegram-bot-api-secret-token': INVALID_HEADER,
-      },
-    })
+    const res = await POST(request(UPDATE, 'wrong'))
 
-    const response = await POST(request)
-    expect(response.status).toBe(401)
+    expect(res.status).toBe(401)
     expect(respond).not.toHaveBeenCalled()
+    expect(sendMessage).not.toHaveBeenCalled()
   })
 
   it('acknowledges a non-text update', async () => {
-    // We use a payload that parseUpdate will return null for (e.g. an unhandled update type)
-    // Since parseUpdate is not mocked, we rely on its real behavior. 
-    // For this test, we provide a valid JSON that doesn't contain a message.text
-    const request = new Request('https://api.telegram.im/webhook', {
-      method: 'POST',
-      headers: {
-        'x-telegram-bot-api-secret-token': WEBHOOK_SECRET,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        update_id: 12345,
-        // No message object, so parseUpdate should return null
-      }),
-    })
+    const res = await POST(request({ message: { chat: { id: 1 }, photo: [] } }, 'hooksecret'))
 
-    const response = await POST(request)
-    const body = await response.json()
-
-    expect(response.status).toBe(200)
-    expect(body).toEqual({ ok: true })
+    expect(res.status).toBe(200)
     expect(respond).not.toHaveBeenCalled()
   })
 
-  it('replies to a known chat', async () => {
-    const chatId = '12345'
-    const text = 'Hello Coach!'
-    const profileId = 'p1'
-    const replyText = 'Hello back!'
+  it('replies to a known chat via the coach', async () => {
+    const res = await POST(request(UPDATE, 'hooksecret'))
 
-    const request = new Request('https://api.telegram.org/webhook', {
-      method: 'POST',
-      headers: {
-        'x-telegram-bot-api-secret-token': WEBHOOK_SECRET,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        message: {
-          chat: { id: chatId },
-          text: text,
-        },
-      }),
-    })
-
-    vi.mocked(prisma.telegramChat.findUnique).mockResolvedValue(makeTelegramChat({ chatId, profileId }))
-    vi.mocked(respond).mockResolvedValue(replyText)
-
-    const response = await POST(request)
-    const body = await response.json()
-
-    expect(response.status).toBe(200)
-    expect(body).toEqual({ ok: true })
-    expect(respond).toHaveBeenCalledWith(profileId, text)
-    expect(sendMessage).toHaveBeenCalledWith(chatId, replyText)
+    expect(res.status).toBe(200)
+    expect(respond).toHaveBeenCalledWith('p1', 'hello')
+    expect(sendMessage).toHaveBeenCalledWith('6300285519', 'a coached reply')
   })
 
-  it('prompts an unknown chat to link', async () => {
-    const chatId = '99999'
-    const text = 'Hi'
+  it('first contact starts onboarding', async () => {
+    vi.mocked(ensureLinkedProfile).mockResolvedValue({ profileId: 'p9', created: true })
+    vi.mocked(onboardingStep).mockResolvedValue('Welcome to cherish.ai. What is their name?')
 
-    const request = new Request('https://api.telegram.org/webhook', {
-      method: 'POST',
-  		headers: {
-  			'x-telegram-bot-api-secret-token': WEBHOOK_SECRET,
-  			'Content-Type': 'application/json',
-  		},
-  		body: JSON.stringify({
-  			message: {
-  				chat: { id: chatId },
-  				text: text,
-  			},
-  		}),
-    })
+    const res = await POST(request(UPDATE, 'hooksecret'))
 
-    vi.mocked(prisma.telegramChat.findUnique).mockResolvedValue(null)
-
-    const response = await POST(request)
-    const body = await response.json()
-
-    expect(response.status).toBe(200)
-    expect(body).toEqual({ ok: true })
+    expect(res.status).toBe(200)
+    expect(sendMessage).toHaveBeenCalledWith(
+      '6300285519', 'Welcome to cherish.ai. What is their name?')
     expect(respond).not.toHaveBeenCalled()
-    expect(sendMessage).toHaveBeenCalledWith(chatId, "Please link your Telegram account to use this bot.")
+  })
+
+  it('mid-questionnaire messages get the next question', async () => {
+    vi.mocked(onboardingStep).mockResolvedValue('Question 2?')
+
+    await POST(request(UPDATE, 'hooksecret'))
+
+    expect(sendMessage).toHaveBeenCalledWith('6300285519', 'Question 2?')
+    expect(respond).not.toHaveBeenCalled()
   })
 })
