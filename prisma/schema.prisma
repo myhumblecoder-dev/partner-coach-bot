@@ -5,7 +5,11 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  // "native" for local dev (darwin) and Docker; rhel for Vercel's Lambda
+  // runtime — without it production throws PrismaClientInitializationError:
+  // "could not locate the Query Engine for runtime rhel-openssl-3.0.x".
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
 datasource db {
