@@ -2,6 +2,7 @@ import { prisma } from '@/lib/db'
 import { generate } from '@/lib/ai'
 import { getProfileContext } from '@/lib/profile/context'
 import { buildCoachPrompt } from '@/lib/coach/prompt'
+import { extractFacts } from '@/lib/extraction/extract'
 
 export async function respond(
   profileId: string,
@@ -30,6 +31,12 @@ export async function respond(
   await prisma.message.create({
     data: { profileId, role: 'assistant', text: reply },
   })
+
+  try {
+    await extractFacts(profileId, userMessage)
+  } catch {
+    // extraction must never break or delay the reply
+  }
 
   return reply
 }
