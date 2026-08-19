@@ -1,5 +1,24 @@
 import { prisma } from "@/lib/db";
 
+export type EntryRow = { id: string; text: string; source: string };
+
+export type GiftRow = {
+  id: string;
+  description: string;
+  givenAt: Date | null;
+  howItLanded: string | null;
+  source: string;
+};
+
+export type PortraitEntries = {
+  likes: EntryRow[];
+  dislikes: EntryRow[];
+  jokes: EntryRow[];
+  dreams: EntryRow[];
+  trips: EntryRow[];
+  gifts: GiftRow[];
+};
+
 export type Portrait = {
   name: string;
   likes: string[];
@@ -27,6 +46,9 @@ export type Portrait = {
     month: number;
     day: number;
   }[];
+  // Optional by design (two-phase migration): consumers and fixtures that
+  // predate CRUD stay valid; the loader always fills it.
+  entries?: PortraitEntries;
 };
 
 export async function getPortrait(profileId: string): Promise<Portrait | null> {
@@ -54,7 +76,27 @@ export async function getPortrait(profileId: string): Promise<Portrait | null> {
     return null;
   }
 
+  const entryRow = (row: { id: string; source: string }, text: string) => ({
+    id: row.id,
+    text,
+    source: row.source,
+  });
+
   return {
+    entries: {
+      likes: profile.likes.map((l) => entryRow(l, l.text)),
+      dislikes: profile.dislikes.map((d) => entryRow(d, d.text)),
+      jokes: profile.jokes.map((j) => entryRow(j, j.text)),
+      dreams: profile.dreams.map((d) => entryRow(d, d.description)),
+      trips: profile.trips.map((t) => entryRow(t, t.destination)),
+      gifts: profile.gifts.map((g) => ({
+        id: g.id,
+        description: g.description,
+        givenAt: g.givenAt,
+        howItLanded: g.howItLanded,
+        source: g.source,
+      })),
+    },
     name: profile.name,
     likes: profile.likes.map((l) => l.text),
     dislikes: profile.dislikes.map((d) => d.text),

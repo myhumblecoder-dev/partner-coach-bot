@@ -83,3 +83,19 @@ describe('load', () => {
     )
   })
 })
+
+it('entries carry ids and provenance', async () => {
+  vi.mocked(prisma.profile.findUnique).mockResolvedValue({
+    name: 'Ada',
+    likes: [{ id: 'l1', text: 'tea', source: 'extracted' }],
+    dislikes: [], jokes: [], dreams: [],
+    trips: [{ id: 't1', destination: 'Kyoto', source: 'manual' }],
+    gifts: [], occasions: [], moods: [], events: [],
+  } as never)
+
+  const portrait = await getPortrait('p1')
+
+  expect(portrait?.entries?.likes[0]).toEqual(
+    { id: 'l1', text: 'tea', source: 'extracted' })
+  expect(portrait?.entries?.trips[0].text).toBe('Kyoto')
+})

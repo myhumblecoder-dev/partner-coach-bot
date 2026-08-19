@@ -43,6 +43,7 @@ model LikesEntry {
   profileId String
   text      String
   createdAt DateTime @default(now())
+  source    String   @default("manual")
   profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
 }
 
@@ -51,6 +52,7 @@ model DislikesEntry {
   profileId String
   text      String
   createdAt DateTime @default(now())
+  source    String   @default("manual")
   profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
 }
 
@@ -59,6 +61,7 @@ model Joke {
   profileId String
   text      String
   createdAt DateTime @default(now())
+  source    String   @default("manual")
   profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
 }
 
@@ -68,6 +71,7 @@ model Mood {
   label      String
   note       String?
   recordedAt DateTime @default(now())
+  source    String   @default("manual")
   profile    Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
 }
 
@@ -78,6 +82,7 @@ model Event {
   occurredAt DateTime
   note       String?
   createdAt  DateTime @default(now())
+  source    String   @default("manual")
   profile    Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
 }
 
@@ -88,6 +93,7 @@ model Gift {
   givenAt     DateTime?
   howItLanded String?
   createdAt   DateTime  @default(now())
+  source    String   @default("manual")
   profile     Profile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
 }
 
@@ -99,6 +105,7 @@ model Trip {
   endDate     DateTime?
   note        String?
   createdAt   DateTime  @default(now())
+  source    String   @default("manual")
   profile     Profile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
 }
 
@@ -107,6 +114,7 @@ model Dream {
   profileId   String
   description String
   createdAt   DateTime @default(now())
+  source    String   @default("manual")
   profile     Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
 }
 
