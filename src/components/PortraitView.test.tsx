@@ -185,4 +185,41 @@ describe('PortraitView', () => {
     expect(dates).toHaveTextContent('Birthday September 4')
     expect(dates).toHaveTextContent('Anniversary June 12')
   })
+
+  it('the abstract renders when present', () => {
+    render(
+      <PortraitView
+        portrait={{ ...portraitFixture, summary: 'She is a maker of order.' }}
+        profileId="p1"
+        coverage={{ filled: 0, total: 8, gaps: [] }}
+        daysSinceTouch={null}
+        giftStats={{ logged: 0, hits: 0, misses: 0, unrated: 0, successRate: null }}
+        buckets={[]}
+      />
+    )
+
+    expect(screen.getByTestId('portrait-summary')).toHaveTextContent(
+      'She is a maker of order.')
+  })
+
+  it('facets route to their section', () => {
+    render(
+      <PortraitView
+        portrait={{
+          ...portraitFixture,
+          facets: [
+            { id: 'f1', section: 'likes', label: 'order at home', status: 'active', evidenceCount: 4 },
+          ],
+        }}
+        profileId="p1"
+        coverage={{ filled: 0, total: 8, gaps: [] }}
+        daysSinceTouch={null}
+        giftStats={{ logged: 0, hits: 0, misses: 0, unrated: 0, successRate: null }}
+        buckets={[]}
+      />
+    )
+
+    expect(screen.getByText('order at home')).toBeInTheDocument()
+    expect(screen.getAllByTestId('facet-row')).toHaveLength(1)
+  })
 })

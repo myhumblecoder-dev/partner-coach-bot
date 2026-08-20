@@ -22,6 +22,8 @@ model Profile {
   name         String
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
+  portraitSummary  String?
+  summaryUpdatedAt DateTime?
   likes        LikesEntry[]
   dislikes     DislikesEntry[]
   jokes        Joke[]
@@ -36,6 +38,7 @@ model Profile {
   questionnaireAnswers QuestionnaireAnswer[]
   occasions    Occasion[]
   cadenceRuns  CadenceRun[]
+  facets       Facet[]
 }
 
 model LikesEntry {
@@ -44,6 +47,7 @@ model LikesEntry {
   text      String
   createdAt DateTime @default(now())
   source    String   @default("manual")
+  facetId   String?
   profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
 }
 
@@ -53,6 +57,7 @@ model DislikesEntry {
   text      String
   createdAt DateTime @default(now())
   source    String   @default("manual")
+  facetId   String?
   profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
 }
 
@@ -62,6 +67,7 @@ model Joke {
   text      String
   createdAt DateTime @default(now())
   source    String   @default("manual")
+  facetId   String?
   profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
 }
 
@@ -106,6 +112,7 @@ model Trip {
   note        String?
   createdAt   DateTime  @default(now())
   source    String   @default("manual")
+  facetId   String?
   profile     Profile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
 }
 
@@ -115,6 +122,7 @@ model Dream {
   description String
   createdAt   DateTime @default(now())
   source    String   @default("manual")
+  facetId   String?
   profile     Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
 }
 
@@ -177,6 +185,21 @@ model CadenceRun {
   profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
 
   @@unique([profileId, kind, ranOn])
+}
+
+model Facet {
+  id             String   @id @default(cuid())
+  profileId      String
+  section        String
+  label          String
+  evidenceCount  Int      @default(0)
+  firstNoted     DateTime @default(now())
+  lastReinforced DateTime @default(now())
+  status         String   @default("active")
+  createdAt      DateTime @default(now())
+  profile        Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId, section])
 }
 
 model User {
