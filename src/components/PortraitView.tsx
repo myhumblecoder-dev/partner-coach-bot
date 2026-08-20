@@ -111,7 +111,7 @@ export default function PortraitView({
           <Card title="Moods, lately">
             <MoodTimeline buckets={buckets} />
           </Card>
-          <Card title="Add to the study">
+          <Card title="Add to the Portrait">
             <div className="space-y-8">
               <MoodForm profileId={profileId} />
               <div className="h-px bg-line" />
