@@ -3,6 +3,8 @@ import { prisma } from '@/lib/db'
 import { generate } from '@/lib/ai'
 import { getProfileContext, type ProfileContext } from '@/lib/profile/context'
 import { extractFacts } from '@/lib/extraction/extract'
+import { detectIdeaAsk } from '@/lib/coach/ideaAsk'
+import { generateSuggestion } from '@/lib/suggestions/generate'
 import { respond } from './respond'
 
 vi.mock('@/lib/db', () => ({
@@ -16,6 +18,8 @@ vi.mock('@/lib/db', () => ({
 vi.mock('@/lib/ai', () => ({ generate: vi.fn() }))
 vi.mock('@/lib/profile/context', () => ({ getProfileContext: vi.fn() }))
 vi.mock('@/lib/extraction/extract', () => ({ extractFacts: vi.fn() }))
+vi.mock('@/lib/coach/ideaAsk', () => ({ detectIdeaAsk: vi.fn() }))
+vi.mock('@/lib/suggestions/generate', () => ({ generateSuggestion: vi.fn() }))
 
 const base: ProfileContext = {
   name: 'Ada',
@@ -37,6 +41,7 @@ describe('respond', () => {
     vi.mocked(prisma.message.create).mockResolvedValue({} as never)
     vi.mocked(generate).mockResolvedValue('a thoughtful reply')
     vi.mocked(extractFacts).mockResolvedValue(0)
+    vi.mocked(detectIdeaAsk).mockResolvedValue(null)
   })
 
   it('returns the generated reply', async () => {
@@ -103,6 +108,24 @@ describe('respond', () => {
     await respond('p1', 'hi')
 
     expect(extractFacts).not.toHaveBeenCalled()
+  })
+
+  it('an idea ask returns a tracked suggestion', async () => {
+    vi.mocked(detectIdeaAsk).mockResolvedValue({ kind: 'gift', audience: 'for_her' })
+    vi.mocked(generateSuggestion).mockResolvedValue('a pottery wheel')
+
+    await expect(respond('p1', 'gift ideas?')).resolves.toBe('a pottery wheel')
+
+    expect(generateSuggestion).toHaveBeenCalledWith('p1', 'gift', 'for_her')
+    expect(generate).not.toHaveBeenCalled()
+    expect(prisma.message.create).toHaveBeenCalledTimes(2)
+  })
+
+  it('a failed suggestion falls back to the coach', async () => {
+    vi.mocked(detectIdeaAsk).mockResolvedValue({ kind: 'date', audience: 'for_us' })
+    vi.mocked(generateSuggestion).mockResolvedValue(null)
+
+    await expect(respond('p1', 'date ideas?')).resolves.toBe('a thoughtful reply')
   })
 })
 
