@@ -35,6 +35,7 @@ export default function EntryForm({ profileId }: { profileId: string }) {
           <option value="dislikes">dislikes</option>
           <option value="jokes">jokes</option>
           <option value="dreams">dreams</option>
+          <option value="gifts">gifts</option>
         </select>
       </div>
 

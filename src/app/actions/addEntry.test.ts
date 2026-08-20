@@ -9,6 +9,7 @@ vi.mock('@/lib/db', () => ({
     dislikesEntry: { create: vi.fn() },
     joke: { create: vi.fn() },
     dream: { create: vi.fn() },
+    gift: { create: vi.fn() },
   },
 }))
 
@@ -57,5 +58,17 @@ describe('addEntry', () => {
 
     expect(res).toEqual({ ok: false })
     expect(prisma.likesEntry.create).not.toHaveBeenCalled()
+  })
+})
+
+it('a gift stores description', async () => {
+  vi.clearAllMocks()
+  vi.mocked(prisma.gift.create).mockResolvedValue({} as never)
+
+  const result = await addEntry('p1', 'gifts', 'a pottery wheel')
+
+  expect(result).toEqual({ ok: true })
+  expect(prisma.gift.create).toHaveBeenCalledWith({
+    data: { profileId: 'p1', description: 'a pottery wheel' },
   })
 })

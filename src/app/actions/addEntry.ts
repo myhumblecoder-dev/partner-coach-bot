@@ -3,7 +3,7 @@
 import { prisma } from '@/lib/db'
 import { revalidatePath } from 'next/cache'
 
-const FIELDS = ['likes', 'dislikes', 'jokes', 'dreams'] as const
+const FIELDS = ['likes', 'dislikes', 'jokes', 'dreams', 'gifts'] as const
 export type EntryField = typeof FIELDS[number]
 
 export async function addEntry(
@@ -25,6 +25,8 @@ export async function addEntry(
     await prisma.joke.create({ data: { profileId, text: trimmedText } })
   } else if (field === 'dreams') {
     await prisma.dream.create({ data: { profileId, description: trimmedText } })
+  } else if (field === 'gifts') {
+    await prisma.gift.create({ data: { profileId, description: trimmedText } })
   }
 
   revalidatePath('/portrait')
