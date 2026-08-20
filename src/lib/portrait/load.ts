@@ -42,6 +42,7 @@ export type Portrait = {
   }[];
   trips: string[];
   occasions: {
+    kind: string;
     label: string;
     month: number;
     day: number;
@@ -118,10 +119,6 @@ export async function getPortrait(profileId: string): Promise<Portrait | null> {
       howItLanded: g.howItLanded
     })),
     trips: profile.trips.map((t) => t.destination),
-    occasions: profile.occasions.map((o) => ({
-      label: o.label,
-      month: o.month,
-      day: o.day
-    }))
+    occasions: profile.occasions.map((o) => ({ kind: o.kind, label: o.label, month: o.month, day: o.day }))
   };
 }

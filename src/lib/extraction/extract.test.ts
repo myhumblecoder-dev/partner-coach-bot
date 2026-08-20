@@ -14,6 +14,7 @@ vi.mock('@/lib/db', () => ({
     event: { create: vi.fn() },
     gift: { create: vi.fn() },
     trip: { create: vi.fn() },
+    occasion: { create: vi.fn(), findMany: vi.fn() },
   },
 }))
 vi.mock('@/lib/ai', () => ({ generate: vi.fn() }))
@@ -43,6 +44,8 @@ describe('extractFacts', () => {
     vi.clearAllMocks()
     vi.mocked(getProfileContext).mockResolvedValue(base)
     for (const fn of CREATES()) vi.mocked(fn).mockResolvedValue({} as never)
+    vi.mocked(prisma.occasion.findMany).mockResolvedValue([] as never)
+    vi.mocked(prisma.occasion.create).mockResolvedValue({} as never)
   })
 
   it('writes an extracted like with provenance', async () => {
@@ -79,5 +82,20 @@ describe('extractFacts', () => {
       expect.objectContaining({ data: expect.objectContaining({ label: 'stressed' }) }))
     expect(prisma.trip.create).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ destination: 'Portugal' }) }))
+  })
+
+  it('stores a stated birthday once', async () => {
+    vi.mocked(generate).mockResolvedValue(
+      '{"occasions": [{"kind": "birthday", "label": "her birthday", "month": 9, "day": 4}]}')
+
+    await expect(extractFacts('p1', 'her birthday is September 4th')).resolves.toBe(1)
+    expect(prisma.occasion.create).toHaveBeenCalledWith({
+      data: { profileId: 'p1', kind: 'birthday', label: 'her birthday', month: 9, day: 4 },
+    })
+
+    // Same date mentioned again: the hard dedupe holds.
+    vi.mocked(prisma.occasion.findMany).mockResolvedValue(
+      [{ kind: 'birthday', label: 'Her Birthday', month: 9, day: 4 }] as never)
+    await expect(extractFacts('p1', 'her birthday is Sept 4')).resolves.toBe(0)
   })
 })
