@@ -10,6 +10,19 @@ import type { MoodBucket } from '@/lib/metrics/moodBuckets'
 vi.mock('@/app/actions/editEntry', () => ({ editEntry: vi.fn() }))
 vi.mock('@/app/actions/rateGift', () => ({ rateGift: vi.fn() }))
 
+const portraitFixture: Portrait = {
+      name: 'Ada',
+      likes: [],
+      dislikes: [],
+      jokes: [],
+      dreams: [],
+      trips: [],
+      gifts: [],
+      moods: [],
+      events: [],
+      occasions: []
+    }
+
 describe('PortraitView', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -148,5 +161,28 @@ describe('PortraitView', () => {
 
     expect(screen.getAllByTestId('portrait-section')).toHaveLength(5)
     expect(screen.getAllByText('Nothing here yet.')).toHaveLength(5)
+  })
+
+  it('the header carries her dates when known', () => {
+    render(
+      <PortraitView
+        portrait={{
+          ...portraitFixture,
+          occasions: [
+            { kind: 'birthday', label: 'her birthday', month: 9, day: 4 },
+            { kind: 'anniversary', label: 'our anniversary', month: 6, day: 12 },
+          ],
+        }}
+        profileId="p1"
+        coverage={{ filled: 0, total: 8, gaps: [] }}
+        daysSinceTouch={null}
+        giftStats={{ logged: 0, hits: 0, misses: 0, unrated: 0, successRate: null }}
+        buckets={[]}
+      />
+    )
+
+    const dates = screen.getByTestId('header-dates')
+    expect(dates).toHaveTextContent('Birthday September 4')
+    expect(dates).toHaveTextContent('Anniversary June 12')
   })
 })

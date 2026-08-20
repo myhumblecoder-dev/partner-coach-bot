@@ -7,8 +7,12 @@ import MoodTimeline from '@/components/MoodTimeline';
 import StudyMetrics from '@/components/StudyMetrics';
 import GiftHistory from '@/components/GiftHistory';
 import MoodForm from '@/components/MoodForm';
-import OccasionCard from '@/components/OccasionCard';
 import EntryForm from '@/components/EntryForm';
+
+const MONTHS = [
+  'January', 'February', 'March', 'April', 'May', 'June', 'July',
+  'August', 'September', 'October', 'November', 'December',
+];
 
 interface PortraitViewProps {
   portrait: Portrait;
@@ -46,6 +50,8 @@ export default function PortraitView({
   giftStats,
   buckets,
 }: PortraitViewProps) {
+  const birthday = portrait.occasions.find((o) => o.kind === 'birthday')
+  const anniversary = portrait.occasions.find((o) => o.kind === 'anniversary')
   return (
     <main className="mx-auto max-w-5xl px-6 py-14 sm:px-10">
       <header className="mb-10">
@@ -53,12 +59,27 @@ export default function PortraitView({
           cherish<span className="text-accent">.ai</span>
         </p>
         <p className="mb-2 text-xs font-semibold uppercase tracking-[0.3em] text-accent">
-          A study of
+          A portrait of
         </p>
         <h1 className="font-display text-5xl tracking-tight sm:text-6xl">
           {portrait.name}
         </h1>
         <div className="mt-6 h-px w-24 bg-accent/60" />
+        {(birthday || anniversary) && (
+          <p className="mt-4 text-sm text-ink-soft" data-testid="header-dates">
+            {birthday && (
+              <span>
+                Birthday <span className="text-ink">{MONTHS[birthday.month - 1]} {birthday.day}</span>
+              </span>
+            )}
+            {birthday && anniversary && <span className="mx-2 text-line">·</span>}
+            {anniversary && (
+              <span>
+                Anniversary <span className="text-ink">{MONTHS[anniversary.month - 1]} {anniversary.day}</span>
+              </span>
+            )}
+          </p>
+        )}
       </header>
 
       <div className="mb-8">
@@ -111,9 +132,6 @@ export default function PortraitView({
         <div className="space-y-6 lg:col-span-2">
           <Card title="Moods, lately">
             <MoodTimeline buckets={buckets} />
-          </Card>
-          <Card title="Occasions">
-            <OccasionCard profileId={profileId} occasions={portrait.occasions} />
           </Card>
           <Card title="Add to the Portrait">
             <div className="space-y-8">

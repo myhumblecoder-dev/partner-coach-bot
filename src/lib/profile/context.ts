@@ -10,6 +10,8 @@ export type ProfileContext = {
   recentEvents: { title: string; note: string | null }[];
   pastGifts: string[];
   pastTrips: string[];
+  // Optional (additive): known recurring dates, for extraction dedupe.
+  occasions?: { kind: string; label: string; month: number; day: number }[];
 };
 
 export async function getProfileContext(profileId: string): Promise<ProfileContext | null> {
@@ -22,6 +24,7 @@ export async function getProfileContext(profileId: string): Promise<ProfileConte
       dreams: true,
       gifts: true,
       trips: true,
+      occasions: true,
       moods: {
         orderBy: { recordedAt: "desc" },
         take: 10,
@@ -53,5 +56,6 @@ export async function getProfileContext(profileId: string): Promise<ProfileConte
     })),
     pastGifts: profile.gifts.map((g) => g.description),
     pastTrips: profile.trips.map((t) => t.destination),
+    occasions: (profile.occasions ?? []).map((o) => ({ kind: o.kind, label: o.label, month: o.month, day: o.day })),
   };
 }
