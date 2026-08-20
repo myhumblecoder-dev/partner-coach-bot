@@ -7,6 +7,7 @@ import MoodTimeline from '@/components/MoodTimeline';
 import StudyMetrics from '@/components/StudyMetrics';
 import GiftHistory from '@/components/GiftHistory';
 import MoodForm from '@/components/MoodForm';
+import OccasionCard from '@/components/OccasionCard';
 import EntryForm from '@/components/EntryForm';
 
 interface PortraitViewProps {
@@ -110,6 +111,9 @@ export default function PortraitView({
         <div className="space-y-6 lg:col-span-2">
           <Card title="Moods, lately">
             <MoodTimeline buckets={buckets} />
+          </Card>
+          <Card title="Occasions">
+            <OccasionCard profileId={profileId} occasions={portrait.occasions} />
           </Card>
           <Card title="Add to the Portrait">
             <div className="space-y-8">
