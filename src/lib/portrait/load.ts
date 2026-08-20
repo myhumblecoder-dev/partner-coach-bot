@@ -19,6 +19,14 @@ export type PortraitEntries = {
   gifts: GiftRow[];
 };
 
+export type FacetView = {
+  id: string;
+  section: string;
+  label: string;
+  status: string;
+  evidenceCount: number;
+};
+
 export type Portrait = {
   name: string;
   likes: string[];
@@ -50,6 +58,8 @@ export type Portrait = {
   // Optional by design (two-phase migration): consumers and fixtures that
   // predate CRUD stay valid; the loader always fills it.
   entries?: PortraitEntries;
+  summary?: string | null;
+  facets?: FacetView[];
 };
 
 export async function getPortrait(profileId: string): Promise<Portrait | null> {
@@ -63,6 +73,7 @@ export async function getPortrait(profileId: string): Promise<Portrait | null> {
       gifts: true,
       trips: true,
       occasions: true,
+      facets: { where: { status: { not: 'rejected' } } },
       moods: {
         orderBy: { recordedAt: "asc" }
       },
@@ -84,6 +95,14 @@ export async function getPortrait(profileId: string): Promise<Portrait | null> {
   });
 
   return {
+    summary: profile.portraitSummary,
+    facets: (profile.facets ?? []).map((f) => ({
+      id: f.id,
+      section: f.section,
+      label: f.label,
+      status: f.status,
+      evidenceCount: f.evidenceCount,
+    })),
     entries: {
       likes: profile.likes.map((l) => entryRow(l, l.text)),
       dislikes: profile.dislikes.map((d) => entryRow(d, d.text)),
