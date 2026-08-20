@@ -2,7 +2,7 @@ import type { Portrait } from '@/lib/portrait/load';
 import type { Coverage } from '@/lib/metrics/coverage';
 import type { GiftStats } from '@/lib/metrics/gifts';
 import type { MoodBucket } from '@/lib/metrics/moodBuckets';
-import EditableSection from '@/components/EditableSection';
+import FacetSection from '@/components/FacetSection';
 import MoodTimeline from '@/components/MoodTimeline';
 import StudyMetrics from '@/components/StudyMetrics';
 import GiftHistory from '@/components/GiftHistory';
@@ -80,6 +80,14 @@ export default function PortraitView({
             )}
           </p>
         )}
+        {portrait.summary && (
+          <p
+            data-testid="portrait-summary"
+            className="mt-5 max-w-2xl font-display text-lg leading-relaxed text-ink"
+          >
+            {portrait.summary}
+          </p>
+        )}
       </header>
 
       <div className="mb-8">
@@ -94,30 +102,35 @@ export default function PortraitView({
         <div className="space-y-6 lg:col-span-3">
           <Card>
             <div className="space-y-7">
-              <EditableSection
+              <FacetSection
                 title="Likes"
                 field="likes"
                 rows={portrait.entries?.likes ?? []}
+                facets={(portrait.facets ?? []).filter((f) => f.section === 'likes')}
               />
-              <EditableSection
+              <FacetSection
                 title="Dislikes"
                 field="dislikes"
                 rows={portrait.entries?.dislikes ?? []}
+                facets={(portrait.facets ?? []).filter((f) => f.section === 'dislikes')}
               />
-              <EditableSection
+              <FacetSection
                 title="Jokes"
                 field="jokes"
                 rows={portrait.entries?.jokes ?? []}
+                facets={(portrait.facets ?? []).filter((f) => f.section === 'jokes')}
               />
-              <EditableSection
+              <FacetSection
                 title="Dreams & Wishes"
                 field="dreams"
                 rows={portrait.entries?.dreams ?? []}
+                facets={(portrait.facets ?? []).filter((f) => f.section === 'dreams')}
               />
-              <EditableSection
+              <FacetSection
                 title="Trips"
                 field="trips"
                 rows={portrait.entries?.trips ?? []}
+                facets={(portrait.facets ?? []).filter((f) => f.section === 'trips')}
               />
             </div>
           </Card>
