@@ -12,6 +12,10 @@ export type ProfileContext = {
   pastTrips: string[];
   // Optional (additive): known recurring dates, for extraction dedupe.
   occasions?: { kind: string; label: string; month: number; day: number }[];
+  // Optional (additive): the studied layer — the coach prefers findings.
+  summary?: string | null;
+  facets?: { section: string; label: string; evidenceCount: number }[];
+  giftRecord?: { description: string; howItLanded: string | null }[];
 };
 
 export async function getProfileContext(profileId: string): Promise<ProfileContext | null> {
@@ -25,6 +29,7 @@ export async function getProfileContext(profileId: string): Promise<ProfileConte
       gifts: true,
       trips: true,
       occasions: true,
+      facets: { where: { status: 'active' } },
       moods: {
         orderBy: { recordedAt: "desc" },
         take: 10,
@@ -57,5 +62,15 @@ export async function getProfileContext(profileId: string): Promise<ProfileConte
     pastGifts: profile.gifts.map((g) => g.description),
     pastTrips: profile.trips.map((t) => t.destination),
     occasions: (profile.occasions ?? []).map((o) => ({ kind: o.kind, label: o.label, month: o.month, day: o.day })),
+    summary: profile.portraitSummary ?? null,
+    facets: (profile.facets ?? []).map((f) => ({
+      section: f.section,
+      label: f.label,
+      evidenceCount: f.evidenceCount,
+    })),
+    giftRecord: (profile.gifts ?? []).map((g) => ({
+      description: g.description,
+      howItLanded: g.howItLanded,
+    })),
   };
 }
