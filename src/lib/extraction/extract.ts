@@ -16,6 +16,26 @@ export async function extractFacts(profileId: string, text: string): Promise<num
 
   let count = 0;
 
+  // Occasions: structured, deduped hard — the prompt-side "already known"
+  // list is advice, this is the guarantee. Same kind+date or same label
+  // (case-insensitive) is the same occasion.
+  if (extraction.occasions.length > 0) {
+    const existing = await prisma.occasion.findMany({ where: { profileId } });
+    for (const o of extraction.occasions) {
+      const dupe = existing.some(
+        (e) =>
+          (e.kind === o.kind && e.month === o.month && e.day === o.day) ||
+          e.label.toLowerCase() === o.label.toLowerCase()
+      );
+      if (dupe) continue;
+      await prisma.occasion.create({
+        data: { profileId, kind: o.kind, label: o.label, month: o.month, day: o.day },
+      });
+      count++;
+    }
+  }
+
+
   if (extraction.likes) {
     for (const item of extraction.likes) {
       await prisma.likesEntry.create({

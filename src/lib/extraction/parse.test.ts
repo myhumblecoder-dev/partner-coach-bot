@@ -28,6 +28,7 @@ describe('parse', () => {
       events: [],
       gifts: [],
       trips: [],
+      occasions: [],
     }
     expect(parseExtraction('no json here')).toEqual(emptyResult)
     expect(parseExtraction('{broken')).toEqual(emptyResult)
@@ -55,5 +56,20 @@ describe('parse', () => {
     expect(result.likes).toEqual(['tea'])
     expect(result.dislikes).toEqual([])
     expect(result.trips).toEqual([])
+  })
+
+  it('parses a structured occasion and drops invalid dates', () => {
+    const result = parseExtraction(JSON.stringify({
+      occasions: [
+        { kind: 'birthday', label: 'her birthday', month: 9, day: 4 },
+        { kind: 'anniversary', label: 'x', month: 2, day: 31 },
+        { kind: 'party', label: 'y', month: 1, day: 1 },
+        'not an object',
+      ],
+    }))
+
+    expect(result.occasions).toEqual([
+      { kind: 'birthday', label: 'her birthday', month: 9, day: 4 },
+    ])
   })
 })
