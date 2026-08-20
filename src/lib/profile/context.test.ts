@@ -88,3 +88,20 @@ describe('context', () => {
     })
   })
 })
+
+it('the study rides along', async () => {
+  vi.mocked(db.profile.findUnique).mockResolvedValue({
+    name: 'Yoyo',
+    portraitSummary: 'She is a maker of order.',
+    facets: [{ section: 'likes', label: 'order at home', evidenceCount: 3 }],
+    likes: [], dislikes: [], jokes: [], dreams: [], trips: [],
+    gifts: [{ description: 'record player', howItLanded: 'hit' }],
+    moods: [], events: [], occasions: [],
+  } as never)
+
+  const context = await getProfileContext('p1')
+
+  expect(context?.summary).toBe('She is a maker of order.')
+  expect(context?.facets?.[0].label).toBe('order at home')
+  expect(context?.giftRecord?.[0].howItLanded).toBe('hit')
+})
