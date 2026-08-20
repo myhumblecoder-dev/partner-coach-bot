@@ -99,3 +99,19 @@ it('entries carry ids and provenance', async () => {
     { id: 'l1', text: 'tea', source: 'extracted' })
   expect(portrait?.entries?.trips[0].text).toBe('Kyoto')
 })
+
+it('facets and summary ride along', async () => {
+  vi.mocked(prisma.profile.findUnique).mockResolvedValue({
+    name: 'Yoyo',
+    portraitSummary: 'She is a maker of order.',
+    facets: [{ id: 'f1', section: 'likes', label: 'order at home', status: 'active', evidenceCount: 4 }],
+    likes: [], dislikes: [], jokes: [], dreams: [],
+    trips: [], gifts: [], occasions: [], moods: [], events: [],
+  } as never)
+
+  const portrait = await getPortrait('p1')
+
+  expect(portrait?.summary).toBe('She is a maker of order.')
+  expect(portrait?.facets).toHaveLength(1)
+  expect(portrait?.facets?.[0].label).toBe('order at home')
+})
