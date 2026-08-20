@@ -7,35 +7,61 @@ export function buildCoachPrompt(
 ): string {
   const sections: string[] = [];
 
-  if (context.likes.length > 0) {
-    sections.push(`Likes: ${context.likes.join(', ')}`);
+  if (context.summary) {
+    sections.push(`What you understand about ${context.name}: ${context.summary}`);
   }
-  if (context.dislikes.length > 0) {
-    sections.push(`Dislikes: ${context.dislikes.join(', ')}`);
-  }
-  if (context.jokes.length > 0) {
-    sections.push(`Jokes: ${context.jokes.join(', ')}`);
-  }
-  if (context.dreams.length > 0) {
-    sections.push(`Dreams: ${context.dreams.join(', ')}`);
-  }
+
+  const facetMap: Record<string, string> = {
+    likes: 'Likes:',
+    dislikes: 'Dislikes:',
+    jokes: 'Jokes:',
+    dreams: 'Dreams:',
+    trips: 'Past trips:',
+  };
+
+  const handleSection = (key: 'likes' | 'dislikes' | 'jokes' | 'dreams' | 'trips', rawList: string[]) => {
+    const sectionFacets = context.facets?.filter((f) => f.section === key) || [];
+    if (sectionFacets.length > 0) {
+      const heading = facetMap[key];
+      const findings = sectionFacets
+        .map((f) => `${f.label} (×${f.evidenceCount})`)
+        .join(', ');
+      sections.push(`${heading} ${findings}`);
+    } else if (rawList.length > 0) {
+      sections.push(`${facetMap[key]} ${rawList.join(', ')}`);
+    }
+  };
+
+  handleSection('likes', context.likes);
+  handleSection('dislikes', context.dislikes);
+  handleSection('jokes', context.jokes);
+  handleSection('dreams', context.dreams);
+  handleSection('trips', context.pastTrips);
+
   if (context.recentMoods.length > 0) {
     const moods = context.recentMoods
       .map((m) => `${m.label}${m.note ? ': ' + m.note : ''}`)
       .join(', ');
     sections.push(`Recent moods: ${moods}`);
   }
+
   if (context.recentEvents.length > 0) {
     const events = context.recentEvents
       .map((e) => `${e.title}${e.note ? ': ' + e.note : ''}`)
       .join(', ');
     sections.push(`Recent events: ${events}`);
   }
-  if (context.pastGifts.length > 0) {
+
+  if (context.giftRecord && context.giftRecord.length > 0) {
+    const gifts = context.giftRecord
+      .map((g) => {
+        const outcome = g.howItLanded === 'hit' ? 'landed' : g.howItLanded === 'miss' ? 'missed' : 'unrated';
+        return `${g.description} ${outcome}`;
+      })
+      .join('\n');
+    sections.push(`Gift record:\n${gifts}`);
+  } else if (context.pastGifts.length > 0) {
     sections.push(`Past gifts: ${context.pastGifts.join(', ')}`);
-  }
-  if (context.pastTrips.length > 0) {
-    sections.push(`Past trips: ${context.pastTrips.join(', ')}`);
   }
 
   const contextString = sections.length > 0 ? sections.join('\n') : '';

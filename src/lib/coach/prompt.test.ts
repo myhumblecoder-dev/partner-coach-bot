@@ -21,7 +21,7 @@ describe('prompt', () => {
   })
 
   it('includes populated sections', () => {
-    const prompt = buildCC({ ...base, likes: ['tea', 'coffee'] }, [], 'hello')
+    const prompt = buildCoachPrompt({ ...base, likes: ['tea', 'coffee'] }, [], 'hello')
     expect(prompt).toContain('Likes:')
     expect(prompt).toContain('tea')
     expect(prompt).toContain('coffee')
@@ -39,13 +39,62 @@ describe('prompt', () => {
     const prompt = buildCoachPrompt(base, [{ role: 'user', text: 'hi' }], userMsg)
     expect(prompt.endsWith(userMsg)).toBe(true)
   })
-})
 
-/**
- * Helper to avoid repetitive spreading in tests while keeping the logic clean
- * though the prompt asks to use spread in the tests themselves, 
- * I'll use the spread pattern directly in the tests as requested.
- */
-function buildCC(ctx: ProfileContext, hist: any[], msg: string) {
-  return buildCoachPrompt(ctx, hist, msg)
-}
+  it('opens with the understanding', () => {
+    const context = {
+      ...base,
+      summary: 'She is a maker of order.'
+    }
+    const prompt = buildCoachPrompt(context, [], 'hello')
+    const expectedLine = 'What you understand about Ada: She is a maker of order.'
+    
+    expect(prompt).toContain(expectedLine)
+    
+    // Ensure it appears before any section headings like Likes:
+    const summaryIndex = prompt.indexOf(expectedLine)
+    const likesIndex = prompt.indexOf('Likes:')
+    if (likesIndex !== -1) {
+      expect(summaryIndex).toBeLessThan(likesIndex)
+    }
+  })
+
+  it('findings replace raw lists per section', () => {
+    const context = {
+      ...base,
+      likes: ['orderliness', 'cleanliness'],
+      facets: [
+        {
+          section: 'likes',
+          label: 'order at home',
+          evidenceCount: 3
+        }
+      ]
+    }
+    const prompt = buildCoachPrompt(context, [], 'hello')
+    
+    expect(prompt).toContain('order at home (×3)')
+    expect(prompt).not.toContain('orderliness')
+    expect(prompt).not.toContain('cleanliness')
+  })
+
+  it('gift outcomes are named', () => {
+    const context = {
+      ...base,
+      giftRecord: [
+        { description: 'record player', howItLanded: 'hit' },
+        { description: 'perfume set', howItLanded: 'miss' },
+        { description: 'book', howItLanded: 'unrated' }
+      ]
+    }
+    const prompt = buildCoachPrompt(context, [], 'hello')
+    
+    expect(prompt).toContain('record player')
+    expect(prompt).toContain('landed')
+    
+    expect(prompt).toContain('perfume set')
+    expect(prompt).toContain('missed')
+
+    expect(prompt).toContain('book')
+    expect(prompt).toContain('unrated')
+  })
+})
