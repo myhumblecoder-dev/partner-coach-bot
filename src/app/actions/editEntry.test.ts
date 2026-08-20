@@ -10,12 +10,14 @@ vi.mock('@/lib/db', () => ({
     joke: { update: vi.fn(), delete: vi.fn() },
     dream: { update: vi.fn(), delete: vi.fn() },
     trip: { update: vi.fn(), delete: vi.fn() },
+    gift: { update: vi.fn(), delete: vi.fn() },
   },
 }))
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }))
 
 const MODELS = () => [
   prisma.likesEntry, prisma.dislikesEntry, prisma.joke, prisma.dream, prisma.trip,
+  prisma.gift,
 ]
 
 describe('editEntry', () => {
@@ -58,5 +60,12 @@ describe('editEntry', () => {
     vi.mocked(prisma.joke.delete).mockRejectedValue(new Error('gone'))
 
     expect(await deleteEntry('jokes', 'j1')).toEqual({ ok: false })
+  })
+
+  it('deletes a gift', async () => {
+    const result = await deleteEntry('gifts', 'g1')
+
+    expect(result).toEqual({ ok: true })
+    expect(prisma.gift.delete).toHaveBeenCalledWith({ where: { id: 'g1' } })
   })
 })

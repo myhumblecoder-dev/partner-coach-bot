@@ -3,7 +3,7 @@
 import { prisma } from '@/lib/db'
 import { revalidatePath } from 'next/cache'
 
-export type EditableField = 'likes' | 'dislikes' | 'jokes' | 'dreams' | 'trips'
+export type EditableField = 'likes' | 'dislikes' | 'jokes' | 'dreams' | 'trips' | 'gifts'
 
 // Each model's own text column — they are not interchangeable.
 const TABLE = {
@@ -17,6 +17,8 @@ const TABLE = {
     prisma.dream.update({ where: { id }, data: { description: text } }),
   trips: (id: string, text: string) =>
     prisma.trip.update({ where: { id }, data: { destination: text } }),
+  gifts: (id: string, text: string) =>
+    prisma.gift.update({ where: { id }, data: { description: text } }),
 } as const
 
 const DELETE = {
@@ -25,6 +27,7 @@ const DELETE = {
   jokes: (id: string) => prisma.joke.delete({ where: { id } }),
   dreams: (id: string) => prisma.dream.delete({ where: { id } }),
   trips: (id: string) => prisma.trip.delete({ where: { id } }),
+  gifts: (id: string) => prisma.gift.delete({ where: { id } }),
 } as const
 
 function known(field: string): field is EditableField {

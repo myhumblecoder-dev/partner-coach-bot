@@ -1,6 +1,7 @@
 'use client'
 
 import { rateGift } from '@/app/actions/rateGift'
+import { deleteEntry } from '@/app/actions/editEntry'
 import type { GiftRow } from '@/lib/portrait/load'
 
 type Gift = {
@@ -53,6 +54,15 @@ export default function GiftHistory({
           <span className="text-sm text-ink">{gift.description}</span>
           <span className="flex shrink-0 items-center gap-1.5">
             <Badge howItLanded={gift.howItLanded} />
+            {rows && (
+              <button
+                aria-label={`Delete ${gift.description}`}
+                onClick={() => deleteEntry('gifts', (gift as GiftRow).id)}
+                className="rounded-full border border-line px-2 py-0.5 text-xs text-ink-soft hover:bg-paper"
+              >
+                ✕
+              </button>
+            )}
             {rows && gift.howItLanded === null && (
               <>
                 <button
