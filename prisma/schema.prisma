@@ -24,6 +24,7 @@ model Profile {
   updatedAt    DateTime      @updatedAt
   portraitSummary  String?
   summaryUpdatedAt DateTime?
+  timezone         String?
   likes        LikesEntry[]
   dislikes     DislikesEntry[]
   jokes        Joke[]
