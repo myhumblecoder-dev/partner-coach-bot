@@ -10,6 +10,7 @@ export type ProfileContext = {
   recentEvents: { title: string; note: string | null }[];
   pastGifts: string[];
   pastTrips: string[];
+  timezone?: string | null;
   // Optional (additive): known recurring dates, for extraction dedupe.
   occasions?: { kind: string; label: string; month: number; day: number }[];
   // Optional (additive): the studied layer — the coach prefers findings.
@@ -41,36 +42,22 @@ export async function getProfileContext(profileId: string): Promise<ProfileConte
     },
   });
 
-  if (!profile) {
-    return null;
-  }
+  if (!profile) return null;
 
   return {
     name: profile.name,
+    timezone: profile.timezone ?? null,
     likes: profile.likes.map((l) => l.text),
     dislikes: profile.dislikes.map((d) => d.text),
     jokes: profile.jokes.map((j) => j.text),
     dreams: profile.dreams.map((dr) => dr.description),
-    recentMoods: profile.moods.map((m) => ({
-      label: m.label,
-      note: m.note,
-    })),
-    recentEvents: profile.events.map((e) => ({
-      title: e.title,
-      note: e.note,
-    })),
+    recentMoods: profile.moods.map((m) => ({ label: m.label, note: m.note })),
+    recentEvents: profile.events.map((e) => ({ title: e.title, note: e.note })),
     pastGifts: profile.gifts.map((g) => g.description),
     pastTrips: profile.trips.map((t) => t.destination),
     occasions: (profile.occasions ?? []).map((o) => ({ kind: o.kind, label: o.label, month: o.month, day: o.day })),
     summary: profile.portraitSummary ?? null,
-    facets: (profile.facets ?? []).map((f) => ({
-      section: f.section,
-      label: f.label,
-      evidenceCount: f.evidenceCount,
-    })),
-    giftRecord: (profile.gifts ?? []).map((g) => ({
-      description: g.description,
-      howItLanded: g.howItLanded,
-    })),
+    facets: (profile.facets ?? []).map((f) => ({ section: f.section, label: f.label, evidenceCount: f.evidenceCount })),
+    giftRecord: (profile.gifts ?? []).map((g) => ({ description: g.description, howItLanded: g.howItLanded })),
   };
 }
