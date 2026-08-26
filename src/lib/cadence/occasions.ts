@@ -1,3 +1,5 @@
+import { localDayParts } from './localDay';
+
 export type OccasionInput = {
   id: string;
   kind: string;
@@ -7,9 +9,16 @@ export type OccasionInput = {
   leadTimeDays: number;
 };
 
-export function dueOccasions(occasions: OccasionInput[], today: Date): OccasionInput[] {
+export function dueOccasions(occasions: OccasionInput[], today: Date, timezone?: string): OccasionInput[] {
   const results: OccasionInput[] = [];
-  const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  let todayStart: Date;
+  if (timezone) {
+    const { year, month, dayOfMonth } = localDayParts(today, timezone);
+    // UTC midnight representing the user's LOCAL calendar date.
+    todayStart = new Date(Date.UTC(year, month - 1, dayOfMonth));
+  } else {
+    todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  }
 
   for (const occasion of occasions) {
     // 1. Start with the occurrence in the current year

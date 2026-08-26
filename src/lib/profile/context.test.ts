@@ -87,21 +87,37 @@ describe('context', () => {
       take: 10,
     })
   })
-})
 
-it('the study rides along', async () => {
-  vi.mocked(db.profile.findUnique).mockResolvedValue({
-    name: 'Yoyo',
-    portraitSummary: 'She is a maker of order.',
-    facets: [{ section: 'likes', label: 'order at home', evidenceCount: 3 }],
-    likes: [], dislikes: [], jokes: [], dreams: [], trips: [],
-    gifts: [{ description: 'record player', howItLanded: 'hit' }],
-    moods: [], events: [], occasions: [],
-  } as never)
+  it('the study rides along', async () => {
+    vi.mocked(db.profile.findUnique).mockResolvedValue({
+      name: 'Yoyo',
+      portraitSummary: 'She is a maker of order.',
+      facets: [{ section: 'likes', label: 'order at home', evidenceCount: 3 }],
+      likes: [], dislikes: [], jokes: [], dreams: [], trips: [],
+      gifts: [{ description: 'record player', howItLanded: 'hit' }],
+      moods: [], events: [], occasions: [],
+    } as any)
 
-  const context = await getProfileContext('p1')
+    const context = await getProfileContext('p1')
 
-  expect(context?.summary).toBe('She is a maker of order.')
-  expect(context?.facets?.[0].label).toBe('order at home')
-  expect(context?.giftRecord?.[0].howItLanded).toBe('hit')
+    expect(context?.summary).toBe('She is a maker of order.')
+    expect(context?.facets?.[0].label).toBe('order at home')
+    expect(context?.giftRecord?.[0].howItLanded).toBe('hit')
+  })
+
+  it('timezone rides along', async () => {
+    vi.mocked(db.profile.findUnique).mockResolvedValue({
+      id: 'p2',
+      name: 'Parisian',
+      timezone: 'Europe/Paris',
+      likes: [], dislikes: [], jokes: [], dreams: [], trips: [], gifts: [], moods: [], events: [],
+      createdAt: new Date(0),
+      updatedAt: new Date(0),
+    } as any)
+
+    const context = await getProfileContext('p2')
+
+    expect(context).not.toBeNull()
+    expect(context!.timezone).toBe('Europe/Paris')
+  })
 })

@@ -52,6 +52,7 @@ export default async function PortraitPage() {
       daysSinceTouch={daysSinceTouch}
       giftStats={giftStats(portrait.gifts)}
       buckets={moodBuckets(portrait.moods)}
+      timezone={profile.timezone ?? null}
     />
   )
 }
