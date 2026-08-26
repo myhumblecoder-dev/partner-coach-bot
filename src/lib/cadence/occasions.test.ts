@@ -78,4 +78,13 @@ describe('occasions', () => {
     const result = dueOccasions(occasions, today)
     expect(result).toEqual([])
   })
+
+  it('NY midnight crossing: Aug 24 occasion due at 02:00 UTC in NY timezone', () => {
+    const today = new Date('2026-08-25T02:00:00Z') // 22:00 EDT Aug 24 locally
+    const occasions = [
+      { id: '1', kind: 'birthday', label: 'hers', month: 8, day: 24, leadTimeDays: 0 },
+    ]
+    const due = dueOccasions(occasions, today, 'America/New_York')
+    expect(due.map((o) => o.id)).toEqual(['1'])
+  })
 })
