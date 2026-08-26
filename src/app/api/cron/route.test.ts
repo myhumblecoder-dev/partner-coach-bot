@@ -11,6 +11,7 @@ vi.mock('@/lib/db', () => ({
     telegramChat: { findMany: vi.fn() },
     occasion: { findMany: vi.fn() },
     cadenceRun: { findFirst: vi.fn(), create: vi.fn() },
+    profile: { findUnique: vi.fn() },
     facet: { findMany: vi.fn(), updateMany: vi.fn() },
   },
 }))
@@ -133,5 +134,32 @@ describe('route', () => {
     expect(sendMessage).toHaveBeenCalled()
 
     vi.useRealTimers()
+  })
+
+  it('passes timezone to dueCadences', async () => {
+    // 02:00 UTC Aug 25 = 22:00 EDT Aug 24 — an Aug-24 occasion is due ONLY if
+    // the profile timezone is threaded through (the #201 midnight crossing).
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-08-25T02:00:00Z'))
+    try {
+      vi.mocked(prisma.telegramChat.findMany).mockResolvedValue(
+        [{ chatId: 'c1', profileId: 'p1' }] as never)
+      vi.mocked(prisma.profile.findUnique).mockResolvedValue(
+        { timezone: 'America/New_York' } as never)
+      vi.mocked(prisma.cadenceRun.findFirst).mockResolvedValue({ id: 'ran' } as never)
+      vi.mocked(prisma.occasion.findMany).mockResolvedValue(
+        [{ id: 'o1', kind: 'birthday', label: 'her birthday', month: 8, day: 24, leadTimeDays: 0 }] as never)
+      vi.mocked(prisma.facet.findMany).mockResolvedValue([] as never)
+
+      const res = await GET(request('Bearer cronsecret'))
+
+      expect(res.status).toBe(200)
+      expect(prisma.profile.findUnique).toHaveBeenCalledWith(
+        { where: { id: 'p1' }, select: { timezone: true } })
+      expect(sendMessage).toHaveBeenCalledWith('c1',
+        expect.stringContaining('her birthday'))
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

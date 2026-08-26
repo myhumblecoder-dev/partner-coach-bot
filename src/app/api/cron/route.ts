@@ -23,12 +23,15 @@ export async function GET(request: Request): Promise<Response> {
   // UTC midnight, so the once-per-day guard keys on the date, not the moment.
   const ranOn = new Date(Date.UTC(
     today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()))
-  const kinds = dueCadences(today)
-
   let sent = 0
   let synthesized = 0
   const chats = await prisma.telegramChat.findMany()
   for (const chat of chats) {
+    const profileRow = await prisma.profile.findUnique({
+      where: { id: chat.profileId }, select: { timezone: true },
+    })
+    const timezone = profileRow?.timezone ?? undefined
+    const kinds = dueCadences(today, timezone)
     for (const kind of kinds) {
       const already = await prisma.cadenceRun.findFirst({
         where: { profileId: chat.profileId, kind, ranOn },
@@ -70,7 +73,7 @@ export async function GET(request: Request): Promise<Response> {
     const occasions = await prisma.occasion.findMany({
       where: { profileId: chat.profileId },
     })
-    for (const occasion of dueOccasions(occasions, today)) {
+    for (const occasion of dueOccasions(occasions, today, timezone)) {
       const days = Math.ceil(
         (Date.UTC(
           occasion.month - 1 < today.getUTCMonth()
