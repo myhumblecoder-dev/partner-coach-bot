@@ -107,5 +107,7 @@ describe('prompt', () => {
     const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
     const hasMonth = months.some(month => prompt.includes(month))
     expect(hasMonth).toBe(true)
+    // The user's ask was date AND time — the line carries a local clock too.
+    expect(prompt.split('\n')[0]).toMatch(/^Today is [A-Z][a-z]+, [A-Z][a-z]+ \d{1,2}, \d{1,2}:\d{2} (AM|PM) \(UTC\)\.$/)
   })
 })
