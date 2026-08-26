@@ -25,4 +25,17 @@ describe('due', () => {
     const date = new Date(Date.UTC(2026, 10, 1, 9, 0, 0))
     expect(dueCadences(date)).toEqual(['daily', 'weekly', 'monthly'])
   })
+
+  it('Tokyo Saturday UTC is Sunday locally fires weekly and monthly', () => {
+    // 2026-10-31T15:00:00Z is Saturday UTC.
+    // In Tokyo (UTC+9), this is 2026-11-01 00:00:00 (Sunday and 1st of month).
+    const date = new Date(Date.UTC(2026, 9, 31, 15, 0, 0))
+    expect(dueCadences(date, 'Asia/Tokyo')).toEqual(['daily', 'weekly', 'monthly'])
+  })
+
+  it('Saturday UTC without timezone does not fire weekly', () => {
+    // 2026-10-31T15:00:00Z is Saturday UTC.
+    const date = new Date(Date.UTC(2026, 9, 31, 15, 0, 0))
+    expect(dueCadences(date)).toEqual(['daily'])
+  })
 })
