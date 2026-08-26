@@ -41,7 +41,10 @@ jobs:
         run: |
           pnpm install --frozen-lockfile
           set -a && source .vercel/.env.production.local && set +a
-          pnpm exec prisma db push --skip-generate
+          # NO --skip-generate: Prisma 7 rejects it by printing help and
+          # exiting 0 — a silent no-op that would re-plant the outage on the
+          # next Prisma upgrade (brownfield-readiness-checklist §4).
+          pnpm exec prisma db push
       - name: Build
         run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
       - name: Deploy to Vercel production
