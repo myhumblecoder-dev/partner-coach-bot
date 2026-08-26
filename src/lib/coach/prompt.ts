@@ -1,4 +1,5 @@
 import type { ProfileContext } from '@/lib/profile/context';
+import { localDayParts } from '@/lib/cadence/localDay';
 
 export function buildCoachPrompt(
   context: ProfileContext,
@@ -66,7 +67,15 @@ export function buildCoachPrompt(
 
   const contextString = sections.length > 0 ? sections.join('\n') : '';
 
-  let prompt = `You are a relationship coach. Your job is to help the user understand and delight their partner, ${context.name}, using only the information provided in the profile records below.\n\n`;
+  let prompt = '';
+  if (context.timezone) {
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const parts = localDayParts(new Date(), context.timezone);
+    prompt += `Today is ${days[parts.dayOfWeek]}, ${months[parts.month - 1]} ${parts.dayOfMonth} (${context.timezone}).\n`;
+  }
+
+  prompt += `You are a relationship coach. Your job is to help the user understand and delight their partner, ${context.name}, using only the information provided in the profile records below.\n\n`;
 
   if (contextString) {
     prompt += `${contextString}\n\n`;

@@ -97,4 +97,20 @@ describe('prompt', () => {
     expect(prompt).toContain('book')
     expect(prompt).toContain('unrated')
   })
+
+  it('includes local date line when timezone is set', () => {
+    const prompt = buildCoachPrompt({ ...base, timezone: 'UTC' }, [], 'hello')
+    expect(prompt).toContain('Today is ')
+    const months = ['January','February','March','April','May','June','July',
+      'August','September','October','November','December']
+    expect(months.some((m) => prompt.includes(m))).toBe(true)
+    expect(prompt.startsWith('Today is ')).toBe(true)
+    expect(prompt.split('\n')[0]).toMatch(/^Today is [A-Z][a-z]+, [A-Z][a-z]+ \d{1,2} \(UTC\)\.$/)
+  })
+
+  it('no date line when timezone is absent', () => {
+    const prompt = buildCoachPrompt(base, [], 'hello')
+    expect(prompt).not.toContain('Today is ')
+    expect(prompt.startsWith('You are a relationship coach')).toBe(true)
+  })
 })
