@@ -8,6 +8,7 @@ vi.mock('@/lib/db', () => ({
   prisma: { profile: { findFirst: vi.fn() } },
 }))
 vi.mock('@/lib/portrait/load', () => ({ getPortrait: vi.fn() }))
+vi.mock('@/app/actions/saveTimezone', () => ({ saveTimezone: vi.fn() }))
 // The metrics and PortraitView are pure local modules — NOT mocked; the page
 // test proves the real wiring end to end.
 
@@ -55,5 +56,13 @@ describe('PortraitPage', () => {
     render(await PortraitPage())
 
     expect(screen.getByText('1 of 8 areas filled')).toBeInTheDocument()
+  })
+
+  it('portrait page passes timezone prop to PortraitView', async () => {
+    vi.mocked(prisma.profile.findFirst).mockResolvedValue(
+      { id: 'p1', timezone: 'America/New_York' } as never)
+    vi.mocked(getPortrait).mockResolvedValue(empty)
+    render(await PortraitPage())
+    expect(screen.getByTestId('tz-display')).toHaveTextContent('America/New_York')
   })
 })
