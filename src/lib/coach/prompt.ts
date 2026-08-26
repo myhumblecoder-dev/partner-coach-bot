@@ -70,7 +70,7 @@ export function buildCoachPrompt(
   let prompt = '';
 
   if (context.timezone) {
-    const { dayOfWeek, month, dayOfMonth } = localDayParts(new Date(), context.timezone);
+    const { dayOfWeek, month, dayOfMonth, year } = localDayParts(new Date(), context.timezone);
     const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
     const dayName = days[dayOfWeek];
@@ -78,7 +78,7 @@ export function buildCoachPrompt(
     const localTime = new Intl.DateTimeFormat('en-US', {
       timeZone: context.timezone, hour: 'numeric', minute: '2-digit', hour12: true,
     }).format(new Date());
-    prompt += `Today is ${dayName}, ${monthName} ${dayOfMonth}, ${localTime} (${context.timezone}).\n`;
+    prompt += `Today is ${dayName}, ${monthName} ${dayOfMonth}, ${year}, ${localTime} (${context.timezone}).\n`;
   }
 
   prompt += `You are a relationship coach. Your job is to help the user understand and delight their partner, ${context.name}, using only the information provided in the profile records below.\n\n`;
