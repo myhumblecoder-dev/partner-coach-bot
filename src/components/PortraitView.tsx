@@ -8,6 +8,7 @@ import StudyMetrics from '@/components/StudyMetrics';
 import GiftHistory from '@/components/GiftHistory';
 import MoodForm from '@/components/MoodForm';
 import EntryForm from '@/components/EntryForm';
+import TimezoneCapture from '@/components/TimezoneCapture';
 
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June', 'July',
@@ -21,6 +22,7 @@ interface PortraitViewProps {
   daysSinceTouch: number | null;
   giftStats: GiftStats;
   buckets: MoodBucket[];
+  timezone?: string | null;
 }
 
 function Card({
@@ -49,6 +51,7 @@ export default function PortraitView({
   daysSinceTouch,
   giftStats,
   buckets,
+  timezone,
 }: PortraitViewProps) {
   const birthday = portrait.occasions.find((o) => o.kind === 'birthday')
   const anniversary = portrait.occasions.find((o) => o.kind === 'anniversary')
@@ -151,6 +154,8 @@ export default function PortraitView({
               <MoodForm profileId={profileId} />
               <div className="h-px bg-line" />
               <EntryForm profileId={profileId} />
+              <div className="h-px bg-line" />
+              <TimezoneCapture profileId={profileId} savedTimezone={timezone ?? null} />
             </div>
           </Card>
         </div>
