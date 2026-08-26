@@ -9,6 +9,7 @@ import type { MoodBucket } from '@/lib/metrics/moodBuckets'
 
 vi.mock('@/app/actions/editEntry', () => ({ editEntry: vi.fn() }))
 vi.mock('@/app/actions/rateGift', () => ({ rateGift: vi.fn() }))
+vi.mock('@/app/actions/saveTimezone', () => ({ saveTimezone: vi.fn() }))
 
 const portraitFixture: Portrait = {
       name: 'Ada',
@@ -221,5 +222,35 @@ describe('PortraitView', () => {
 
     expect(screen.getByText('order at home')).toBeInTheDocument()
     expect(screen.getAllByTestId('facet-row')).toHaveLength(1)
+  })
+
+  it('renders tz-display when timezone prop is null', () => {
+    render(
+      <PortraitView
+        portrait={portraitFixture}
+        profileId="p1"
+        coverage={{ filled: 0, total: 8, gaps: [] }}
+        daysSinceTouch={null}
+        giftStats={{ logged: 0, hits: 0, misses: 0, unrated: 0, successRate: null }}
+        buckets={[]}
+        timezone={null}
+      />
+    )
+    expect(screen.getByTestId('tz-display')).toBeInTheDocument()
+  })
+
+  it('renders tz-display with value when timezone prop is a string', () => {
+    render(
+      <PortraitView
+        portrait={portraitFixture}
+        profileId="p1"
+        coverage={{ filled: 0, total: 8, gaps: [] }}
+        daysSinceTouch={null}
+        giftStats={{ logged: 0, hits: 0, misses: 0, unrated: 0, successRate: null }}
+        buckets={[]}
+        timezone="America/New_York"
+      />
+    )
+    expect(screen.getByTestId('tz-display')).toHaveTextContent('America/New_York')
   })
 })
