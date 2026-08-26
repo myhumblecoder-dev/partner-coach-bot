@@ -69,7 +69,7 @@ describe('prompt', () => {
           evidenceCount: 3
         }
       ]
-    }
+    } as any // Cast to any to bypass strict type check for the partial facet object
     const prompt = buildCoachPrompt(context, [], 'hello')
     
     expect(prompt).toContain('order at home (×3)')
@@ -85,7 +85,7 @@ describe('prompt', () => {
         { description: 'perfume set', howItLanded: 'miss' },
         { description: 'book', howItLanded: 'unrated' }
       ]
-    }
+    } as any
     const prompt = buildCoachPrompt(context, [], 'hello')
     
     expect(prompt).toContain('record player')
@@ -96,5 +96,16 @@ describe('prompt', () => {
 
     expect(prompt).toContain('book')
     expect(prompt).toContain('unrated')
+  })
+
+  it('includes local date line when timezone set', () => {
+    const context = { ...base, timezone: 'UTC' }
+    const prompt = buildCoachPrompt(context, [], 'hello')
+    
+    expect(prompt).toContain('Today is ')
+    
+    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+    const hasMonth = months.some(month => prompt.includes(month))
+    expect(hasMonth).toBe(true)
   })
 })
