@@ -212,7 +212,6 @@ model CycleLog {
   id              String   @id @default(cuid())
   profileId       String   @unique
   lastPeriodStart DateTime
-  note            String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   profile         Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
