@@ -2,8 +2,12 @@
 
 import { prisma } from '@/lib/db'
 import { revalidatePath } from 'next/cache'
+import { isSignedIn } from '@/lib/auth/session'
 
 export async function saveTimezone(profileId: string, timezone: string): Promise<{ ok: boolean }> {
+  // Public POST endpoint: authorize before touching anything.
+  if (!(await isSignedIn())) return { ok: false }
+
   if (!timezone) {
     return { ok: false }
   }
