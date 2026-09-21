@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { addMood } from './addMood'
 import { prisma as db } from '@/lib/db'
 import { revalidatePath } from 'next/cache'
+import { isSignedIn } from '@/lib/auth/session'
 
 vi.mock('@/lib/db', () => ({
   prisma: {
@@ -15,9 +16,12 @@ vi.mock('next/cache', () => ({
   revalidatePath: vi.fn(),
 }))
 
+vi.mock('@/lib/auth/session', () => ({ isSignedIn: vi.fn() }))
+
 describe('addMood', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(isSignedIn).mockResolvedValue(true)
   })
 
   it('creates the mood and revalidates', async () => {

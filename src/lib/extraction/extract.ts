@@ -3,6 +3,7 @@ import { generate } from "@/lib/ai";
 import { getProfileContext } from "@/lib/profile/context";
 import { buildExtractionPrompt } from "@/lib/extraction/prompt";
 import { parseExtraction } from "@/lib/extraction/parse";
+import { startDateFromDaysAgo, CYCLE_CORRECTION_WINDOW_DAYS } from "@/lib/cycle/day";
 
 export async function extractFacts(profileId: string, text: string): Promise<number> {
   const context = await getProfileContext(profileId);
@@ -35,6 +36,52 @@ export async function extractFacts(profileId: string, text: string): Promise<num
     }
   }
 
+
+  // The cycle: one row per profile, updated in place — never appended to,
+  // never surfaced by `getPortrait`.
+  //
+  // A report NEWER than what we hold always wins, so a vague "she started
+  // last week" cannot walk today's entry backwards. An OLDER one wins only
+  // just after the row was written, which is when a correction arrives —
+  // forward-only with no escape hatch would leave a misheard date standing
+  // until the next cycle start happened to be reported. Re-reporting the
+  // same day matches neither and writes nothing.
+  //
+  // One conditional write, not read-then-act: `extractFacts` is
+  // fire-and-forget from `respond` and the webhook can deliver two messages
+  // at once, so a comparison made in TS can be lost by the slower writer.
+  if (extraction.cycle) {
+    const now = new Date();
+    const lastPeriodStart = startDateFromDaysAgo(
+      now, extraction.cycle.daysAgo, context.timezone);
+    const correctableSince = startDateFromDaysAgo(
+      now, CYCLE_CORRECTION_WINDOW_DAYS, context.timezone);
+    const updated = await prisma.cycleLog.updateMany({
+      where: {
+        profileId,
+        lastPeriodStart: { not: lastPeriodStart },
+        OR: [
+          { lastPeriodStart: { lt: lastPeriodStart } },
+          { updatedAt: { gte: correctableSince } },
+        ],
+      },
+      data: { lastPeriodStart },
+    });
+    if (updated.count > 0) {
+      count++;
+    } else {
+      // Nothing matched: either there is no row yet, or the guard refused
+      // this report. The create settles which — a unique violation means
+      // the row was there (or a concurrent write just made it), and the
+      // stored date stands.
+      try {
+        await prisma.cycleLog.create({ data: { profileId, lastPeriodStart } });
+        count++;
+      } catch {
+        // The stored date stands.
+      }
+    }
+  }
 
   if (extraction.likes) {
     for (const item of extraction.likes) {

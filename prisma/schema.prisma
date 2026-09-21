@@ -40,6 +40,7 @@ model Profile {
   occasions    Occasion[]
   cadenceRuns  CadenceRun[]
   facets       Facet[]
+  cycleLog     CycleLog?
 }
 
 model LikesEntry {
@@ -201,6 +202,19 @@ model Facet {
   profile        Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
 
   @@index([profileId, section])
+}
+
+// The private layer. One row per profile, updated in place — a state, not a
+// history. Deliberately absent from `getPortrait`, so it reaches the coach's
+// context and nothing else: the portrait page renders only what that loader
+// returns, and a relation Prisma is never asked to include cannot leak.
+model CycleLog {
+  id              String   @id @default(cuid())
+  profileId       String   @unique
+  lastPeriodStart DateTime
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  profile         Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
 }
 
 model User {

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { prisma } from '@/lib/db'
 import { generate } from '@/lib/ai'
 import { getProfileContext, type ProfileContext } from '@/lib/profile/context'
@@ -15,6 +15,7 @@ vi.mock('@/lib/db', () => ({
     gift: { create: vi.fn() },
     trip: { create: vi.fn() },
     occasion: { create: vi.fn(), findMany: vi.fn() },
+    cycleLog: { updateMany: vi.fn(), create: vi.fn() },
   },
 }))
 vi.mock('@/lib/ai', () => ({ generate: vi.fn() }))
@@ -46,6 +47,8 @@ describe('extractFacts', () => {
     for (const fn of CREATES()) vi.mocked(fn).mockResolvedValue({} as never)
     vi.mocked(prisma.occasion.findMany).mockResolvedValue([] as never)
     vi.mocked(prisma.occasion.create).mockResolvedValue({} as never)
+    vi.mocked(prisma.cycleLog.updateMany).mockResolvedValue({ count: 0 } as never)
+    vi.mocked(prisma.cycleLog.create).mockResolvedValue({} as never)
   })
 
   it('writes an extracted like with provenance', async () => {
@@ -97,5 +100,98 @@ describe('extractFacts', () => {
     vi.mocked(prisma.occasion.findMany).mockResolvedValue(
       [{ kind: 'birthday', label: 'Her Birthday', month: 9, day: 4 }] as never)
     await expect(extractFacts('p1', 'her birthday is Sept 4')).resolves.toBe(0)
+  })
+
+  describe('the cycle', () => {
+    // The offset is resolved against the clock, so the clock is pinned.
+    beforeEach(() => {
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date('2026-09-21T13:45:00Z'))
+    })
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    const whereOf = () =>
+      vi.mocked(prisma.cycleLog.updateMany).mock.calls[0][0].where as Record<string, unknown>
+
+    it('creates the row on the first reported start', async () => {
+      vi.mocked(generate).mockResolvedValue('{"cycle": {"daysAgo": 2}}')
+
+      await expect(extractFacts('p1', 'she started her period on Saturday'))
+        .resolves.toBe(1)
+
+      expect(prisma.cycleLog.create).toHaveBeenCalledWith({
+        data: { profileId: 'p1', lastPeriodStart: new Date('2026-09-19T00:00:00Z') },
+      })
+      // A state, never a history: nothing is appended anywhere.
+      for (const fn of CREATES()) expect(fn).not.toHaveBeenCalled()
+    })
+
+    it('updates the one row without reading it first', async () => {
+      vi.mocked(prisma.cycleLog.updateMany).mockResolvedValue({ count: 1 } as never)
+      vi.mocked(generate).mockResolvedValue('{"cycle": {"daysAgo": 0}}')
+
+      await expect(extractFacts('p1', 'her period started today')).resolves.toBe(1)
+
+      expect(prisma.cycleLog.updateMany).toHaveBeenCalledTimes(1)
+      expect(prisma.cycleLog.create).not.toHaveBeenCalled()
+      expect(vi.mocked(prisma.cycleLog.updateMany).mock.calls[0][0].data)
+        .toEqual({ lastPeriodStart: new Date('2026-09-21T00:00:00Z') })
+    })
+
+    it('resolves the offset in the profile timezone', async () => {
+      vi.mocked(getProfileContext).mockResolvedValue(
+        { ...base, timezone: 'America/New_York' })
+      vi.mocked(prisma.cycleLog.updateMany).mockResolvedValue({ count: 1 } as never)
+      vi.mocked(generate).mockResolvedValue('{"cycle": {"daysAgo": 0}}')
+      // 01:30 UTC on the 22nd is still the 21st in New York.
+      vi.setSystemTime(new Date('2026-09-22T01:30:00Z'))
+
+      await extractFacts('p1', 'her period started today')
+
+      expect(vi.mocked(prisma.cycleLog.updateMany).mock.calls[0][0].data)
+        .toEqual({ lastPeriodStart: new Date('2026-09-21T00:00:00Z') })
+    })
+
+    it('guards the write in the query, not in TS', async () => {
+      vi.mocked(prisma.cycleLog.updateMany).mockResolvedValue({ count: 1 } as never)
+      vi.mocked(generate).mockResolvedValue('{"cycle": {"daysAgo": 2}}')
+
+      await extractFacts('p1', 'she started Saturday')
+
+      const where = whereOf()
+      const start = new Date('2026-09-19T00:00:00Z')
+      // Newer wins, an identical date is excluded, and a correction is
+      // allowed only for a row written within the window.
+      expect(where.profileId).toBe('p1')
+      expect(where.lastPeriodStart).toEqual({ not: start })
+      expect(where.OR).toEqual([
+        { lastPeriodStart: { lt: start } },
+        { updatedAt: { gte: new Date('2026-09-20T00:00:00Z') } },
+      ])
+    })
+
+    it('a refused report leaves the stored date alone', async () => {
+      // Nothing matched the guard AND the row already exists: the create
+      // hits the unique constraint and the stored date stands.
+      vi.mocked(prisma.cycleLog.updateMany).mockResolvedValue({ count: 0 } as never)
+      vi.mocked(prisma.cycleLog.create).mockRejectedValue(
+        new Error('Unique constraint failed on the fields: (`profileId`)'))
+      vi.mocked(generate).mockResolvedValue('{"cycle": {"daysAgo": 20}}')
+
+      await expect(extractFacts('p1', 'she started a few weeks back'))
+        .resolves.toBe(0)
+    })
+
+    it('touches nothing when the model reports no start', async () => {
+      vi.mocked(generate).mockResolvedValue('{"moods": ["crampy"], "cycle": null}')
+
+      await extractFacts('p1', 'she has cramps today')
+
+      expect(prisma.cycleLog.updateMany).not.toHaveBeenCalled()
+      expect(prisma.cycleLog.create).not.toHaveBeenCalled()
+      expect(prisma.mood.create).toHaveBeenCalled()
+    })
   })
 })

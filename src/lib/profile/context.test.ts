@@ -120,4 +120,41 @@ describe('context', () => {
     expect(context).not.toBeNull()
     expect(context!.timezone).toBe('Europe/Paris')
   })
+
+  it('carries the private cycle record', async () => {
+    vi.mocked(db.profile.findUnique).mockResolvedValue({
+      name: 'Ada',
+      likes: [], dislikes: [], jokes: [], dreams: [], gifts: [], trips: [],
+      moods: [], events: [], occasions: [], facets: [],
+      cycleLog: { lastPeriodStart: new Date(Date.UTC(2026, 8, 7)) },
+    } as never)
+
+    const result = await getProfileContext('profile-1')
+
+    expect(result?.cycle).toEqual({
+      lastPeriodStart: new Date(Date.UTC(2026, 8, 7)),
+    })
+  })
+
+  it('cycle is null when nothing has been logged', async () => {
+    vi.mocked(db.profile.findUnique).mockResolvedValue({
+      name: 'Ada',
+      likes: [], dislikes: [], jokes: [], dreams: [], gifts: [], trips: [],
+      moods: [], events: [], occasions: [], facets: [],
+      cycleLog: null,
+    } as never)
+
+    const result = await getProfileContext('profile-1')
+
+    expect(result?.cycle).toBeNull()
+  })
+
+  it('asks the database for the cycle row', async () => {
+    vi.mocked(db.profile.findUnique).mockResolvedValue(null)
+
+    await getProfileContext('profile-1')
+
+    const arg = vi.mocked(db.profile.findUnique).mock.calls[0][0] as never
+    expect((arg as { include: Record<string, unknown> }).include.cycleLog).toBe(true)
+  })
 })

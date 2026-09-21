@@ -34,4 +34,23 @@ describe('prompt', () => {
       expect(prompt).toContain(`"${key}"`) 
     })
   })
+
+  it('asks for the cycle as an offset, never a date', () => {
+    const prompt = buildExtractionPrompt(base, 'new message')
+
+    expect(prompt).toContain('"cycle"')
+    expect(prompt).toContain('"daysAgo"')
+    expect(prompt).toContain('STARTED')
+  })
+
+  it('never lists the stored cycle back to the model', () => {
+    // Every other section ships its "already known" list for dedupe; this
+    // one does not. The newer-wins guard in extractFacts makes the dedupe
+    // deterministic, so the private record has no reason to ride along on
+    // every extraction call.
+    const prompt = buildExtractionPrompt(base, 'new message')
+
+    expect(prompt).not.toContain('Already known cycle')
+    expect(prompt).not.toContain('last period')
+  })
 })

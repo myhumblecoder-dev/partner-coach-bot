@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { prisma } from '@/lib/db'
 import type { Profile } from '@prisma/client'
 import { saveTimezone } from './saveTimezone'
+import { isSignedIn } from '@/lib/auth/session'
 
 vi.mock('@/lib/db', () => ({
   prisma: {
@@ -56,9 +57,12 @@ const makeProfile = (overrides: Partial<Profile> = {}): Profile =>
     ...overrides,
   } as unknown as Profile)
 
+vi.mock('@/lib/auth/session', () => ({ isSignedIn: vi.fn() }))
+
 describe('saveTimezone', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(isSignedIn).mockResolvedValue(true)
   })
 
   it('invalid timezone returns ok:false without calling prisma.profile.update', async () => {
