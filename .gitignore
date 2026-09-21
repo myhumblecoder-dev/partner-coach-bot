@@ -30,7 +30,10 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files. `.env*` then one exception for the template — and nothing
+# else, because gitignore takes the LAST matching rule: a stray `!.env`
+# further down (there was one) silently re-arms `git add -A` to commit
+# real config, which is how .env came to be tracked in the first place.
 .env*
 !.env.example
 
@@ -42,5 +45,3 @@ yarn-error.log*
 next-env.d.ts
 
 /src/generated/prisma
-!.env.example
-!.env
