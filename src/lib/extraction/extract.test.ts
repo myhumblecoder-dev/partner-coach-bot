@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { prisma } from '@/lib/db'
 import { generate } from '@/lib/ai'
 import { getProfileContext, type ProfileContext } from '@/lib/profile/context'
@@ -15,6 +15,7 @@ vi.mock('@/lib/db', () => ({
     gift: { create: vi.fn() },
     trip: { create: vi.fn() },
     occasion: { create: vi.fn(), findMany: vi.fn() },
+    cycleLog: { findUnique: vi.fn(), upsert: vi.fn() },
   },
 }))
 vi.mock('@/lib/ai', () => ({ generate: vi.fn() }))
@@ -46,6 +47,8 @@ describe('extractFacts', () => {
     for (const fn of CREATES()) vi.mocked(fn).mockResolvedValue({} as never)
     vi.mocked(prisma.occasion.findMany).mockResolvedValue([] as never)
     vi.mocked(prisma.occasion.create).mockResolvedValue({} as never)
+    vi.mocked(prisma.cycleLog.findUnique).mockResolvedValue(null as never)
+    vi.mocked(prisma.cycleLog.upsert).mockResolvedValue({} as never)
   })
 
   it('writes an extracted like with provenance', async () => {
@@ -97,5 +100,83 @@ describe('extractFacts', () => {
     vi.mocked(prisma.occasion.findMany).mockResolvedValue(
       [{ kind: 'birthday', label: 'Her Birthday', month: 9, day: 4 }] as never)
     await expect(extractFacts('p1', 'her birthday is Sept 4')).resolves.toBe(0)
+  })
+
+  describe('the cycle', () => {
+    // The offset is resolved against the clock, so the clock is pinned.
+    beforeEach(() => {
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date('2026-09-21T13:45:00Z'))
+    })
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    it('files a reported start as one updated row', async () => {
+      vi.mocked(generate).mockResolvedValue('{"cycle": {"daysAgo": 2}}')
+
+      await expect(extractFacts('p1', 'she started her period on Saturday'))
+        .resolves.toBe(1)
+
+      expect(prisma.cycleLog.upsert).toHaveBeenCalledWith({
+        where: { profileId: 'p1' },
+        create: { profileId: 'p1', lastPeriodStart: new Date('2026-09-19T00:00:00Z') },
+        update: { lastPeriodStart: new Date('2026-09-19T00:00:00Z') },
+      })
+      // A state, never a history: nothing is appended anywhere.
+      for (const fn of CREATES()) expect(fn).not.toHaveBeenCalled()
+    })
+
+    it('resolves the offset in the profile timezone', async () => {
+      vi.mocked(getProfileContext).mockResolvedValue(
+        { ...base, timezone: 'America/New_York' })
+      vi.mocked(generate).mockResolvedValue('{"cycle": {"daysAgo": 0}}')
+      // 13:45 UTC is still the 21st in New York.
+      vi.setSystemTime(new Date('2026-09-22T01:30:00Z'))
+
+      await extractFacts('p1', 'her period started today')
+
+      expect(vi.mocked(prisma.cycleLog.upsert).mock.calls[0][0].update)
+        .toEqual({ lastPeriodStart: new Date('2026-09-21T00:00:00Z') })
+    })
+
+    it('never walks the stored date backwards', async () => {
+      vi.mocked(prisma.cycleLog.findUnique).mockResolvedValue(
+        { lastPeriodStart: new Date('2026-09-19T00:00:00Z') } as never)
+      vi.mocked(generate).mockResolvedValue('{"cycle": {"daysAgo": 20}}')
+
+      await expect(extractFacts('p1', 'she started her period a few weeks back'))
+        .resolves.toBe(0)
+      expect(prisma.cycleLog.upsert).not.toHaveBeenCalled()
+    })
+
+    it('re-reporting the same start writes nothing', async () => {
+      vi.mocked(prisma.cycleLog.findUnique).mockResolvedValue(
+        { lastPeriodStart: new Date('2026-09-19T00:00:00Z') } as never)
+      vi.mocked(generate).mockResolvedValue('{"cycle": {"daysAgo": 2}}')
+
+      await expect(extractFacts('p1', 'like I said, she started Saturday'))
+        .resolves.toBe(0)
+      expect(prisma.cycleLog.upsert).not.toHaveBeenCalled()
+    })
+
+    it('a newer start updates the one row', async () => {
+      vi.mocked(prisma.cycleLog.findUnique).mockResolvedValue(
+        { lastPeriodStart: new Date('2026-08-24T00:00:00Z') } as never)
+      vi.mocked(generate).mockResolvedValue('{"cycle": {"daysAgo": 0}}')
+
+      await expect(extractFacts('p1', 'her period started today')).resolves.toBe(1)
+      expect(prisma.cycleLog.upsert).toHaveBeenCalledTimes(1)
+    })
+
+    it('touches nothing when the model reports no start', async () => {
+      vi.mocked(generate).mockResolvedValue('{"moods": ["crampy"], "cycle": null}')
+
+      await extractFacts('p1', 'she has cramps today')
+
+      expect(prisma.cycleLog.findUnique).not.toHaveBeenCalled()
+      expect(prisma.cycleLog.upsert).not.toHaveBeenCalled()
+      expect(prisma.mood.create).toHaveBeenCalled()
+    })
   })
 })

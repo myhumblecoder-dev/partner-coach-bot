@@ -115,3 +115,24 @@ it('facets and summary ride along', async () => {
   expect(portrait?.facets).toHaveLength(1)
   expect(portrait?.facets?.[0].label).toBe('order at home')
 })
+
+it('never loads or returns the private cycle record', async () => {
+  // The privacy guarantee is structural, not cosmetic: the portrait page
+  // renders only what this loader returns, so a relation it never asks
+  // Prisma to include cannot reach the UI. If someone adds `cycleLog` to
+  // the include here, this fails.
+  vi.mocked(prisma.profile.findUnique).mockResolvedValue({
+    name: 'Ada',
+    likes: [], dislikes: [], jokes: [], dreams: [],
+    moods: [], events: [], gifts: [], trips: [], occasions: [],
+    cycleLog: { lastPeriodStart: new Date(Date.UTC(2026, 8, 7)) },
+  } as never)
+
+  const result = await getPortrait('ada-id')
+
+  const arg = vi.mocked(prisma.profile.findUnique).mock.calls[0][0] as unknown as {
+    include: Record<string, unknown>
+  }
+  expect(arg.include).not.toHaveProperty('cycleLog')
+  expect(JSON.stringify(result)).not.toContain('lastPeriodStart')
+})

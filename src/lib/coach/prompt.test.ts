@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { buildCoachPrompt } from './prompt'
 import type { ProfileContext } from '@/lib/profile/context'
 
@@ -110,5 +110,62 @@ describe('prompt', () => {
     // The user's ask was date AND time — the line carries a local clock too.
     expect(prompt.split('\n')[0]).toMatch(/^Today is [A-Z][a-z]+, [A-Z][a-z]+ \d{1,2}, \d{4}, \d{1,2}:\d{2} (AM|PM) \(UTC\)\.$/)
     expect(prompt.split('\n')[0]).toContain(String(new Date().getUTCFullYear()))
+  })
+
+  describe('the private cycle note', () => {
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    const at = (iso: string) => {
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date(iso))
+    }
+
+    it('states the days since the start and how to hold it', () => {
+      at('2026-09-21T13:45:00Z')
+
+      const prompt = buildCoachPrompt(
+        { ...base, cycle: { lastPeriodStart: new Date('2026-09-07T00:00:00Z') } },
+        [], 'how is she doing?')
+
+      expect(prompt).toContain("Ada's last period started 14 days ago")
+      expect(prompt).toContain('never raise it yourself')
+    })
+
+    it('reads today and yesterday as words', () => {
+      at('2026-09-21T13:45:00Z')
+
+      expect(buildCoachPrompt(
+        { ...base, cycle: { lastPeriodStart: new Date('2026-09-21T00:00:00Z') } },
+        [], 'hello')).toContain('started today')
+      expect(buildCoachPrompt(
+        { ...base, cycle: { lastPeriodStart: new Date('2026-09-20T00:00:00Z') } },
+        [], 'hello')).toContain('started yesterday')
+    })
+
+    it('counts in the profile timezone', () => {
+      // 01:30 UTC on the 22nd is still the 21st in New York, so only one
+      // day has passed since the 20th — not two.
+      at('2026-09-22T01:30:00Z')
+
+      const prompt = buildCoachPrompt(
+        {
+          ...base,
+          timezone: 'America/New_York',
+          cycle: { lastPeriodStart: new Date('2026-09-20T00:00:00Z') },
+        },
+        [], 'hello')
+
+      expect(prompt).toContain('started yesterday')
+    })
+
+    it('says nothing at all when nothing is logged', () => {
+      const withoutField = buildCoachPrompt(base, [], 'hello')
+      const withNull = buildCoachPrompt({ ...base, cycle: null }, [], 'hello')
+
+      expect(withoutField).not.toContain('period')
+      expect(withNull).toBe(withoutField)
+    })
   })
 })

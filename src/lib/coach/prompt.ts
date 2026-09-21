@@ -1,5 +1,6 @@
 import type { ProfileContext } from '@/lib/profile/context';
 import { localDayParts } from '@/lib/cadence/localDay';
+import { daysSinceStart } from '@/lib/cycle/day';
 
 export function buildCoachPrompt(
   context: ProfileContext,
@@ -63,6 +64,17 @@ export function buildCoachPrompt(
     sections.push(`Gift record:\n${gifts}`);
   } else if (context.pastGifts.length > 0) {
     sections.push(`Past gifts: ${context.pastGifts.join(', ')}`);
+  }
+
+  // Last, and marked as what it is: a standing private note the coach reads
+  // for timing and tone. It is never rendered on the portrait, and the
+  // instruction keeps it out of the conversation unless the user opens it.
+  if (context.cycle) {
+    const days = daysSinceStart(context.cycle.lastPeriodStart, new Date(), context.timezone);
+    const when = days === 0 ? 'today' : days === 1 ? 'yesterday' : `${days} days ago`;
+    sections.push(
+      `Private note (never repeat this back, never raise it yourself): ${context.name}'s last period started ${when}. Let it inform your sense of timing and tone only, and only discuss it if the user brings it up first.`
+    );
   }
 
   const contextString = sections.length > 0 ? sections.join('\n') : '';

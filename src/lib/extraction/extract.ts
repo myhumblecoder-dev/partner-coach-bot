@@ -3,6 +3,7 @@ import { generate } from "@/lib/ai";
 import { getProfileContext } from "@/lib/profile/context";
 import { buildExtractionPrompt } from "@/lib/extraction/prompt";
 import { parseExtraction } from "@/lib/extraction/parse";
+import { startDateFromDaysAgo } from "@/lib/cycle/day";
 
 export async function extractFacts(profileId: string, text: string): Promise<number> {
   const context = await getProfileContext(profileId);
@@ -35,6 +36,24 @@ export async function extractFacts(profileId: string, text: string): Promise<num
     }
   }
 
+
+  // The cycle: one row per profile, updated in place — never appended to,
+  // never surfaced by `getPortrait`. Only a report NEWER than what we hold
+  // wins, so "she started her period last week" arriving after today's
+  // entry cannot walk the date backwards.
+  if (extraction.cycle) {
+    const lastPeriodStart = startDateFromDaysAgo(
+      new Date(), extraction.cycle.daysAgo, context.timezone);
+    const existing = await prisma.cycleLog.findUnique({ where: { profileId } });
+    if (!existing || lastPeriodStart.getTime() > existing.lastPeriodStart.getTime()) {
+      await prisma.cycleLog.upsert({
+        where: { profileId },
+        create: { profileId, lastPeriodStart },
+        update: { lastPeriodStart },
+      });
+      count++;
+    }
+  }
 
   if (extraction.likes) {
     for (const item of extraction.likes) {

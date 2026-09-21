@@ -5,6 +5,13 @@ export type ExtractedOccasion = {
   day: number;
 };
 
+/** A period report, as an offset in days — never an absolute date. See
+ * `startDateFromDaysAgo` for why the model is never asked for a calendar
+ * date. */
+export type ExtractedCycle = {
+  daysAgo: number;
+};
+
 export type ExtractedFacts = {
   likes: string[];
   dislikes: string[];
@@ -15,6 +22,7 @@ export type ExtractedFacts = {
   gifts: string[];
   trips: string[];
   occasions: ExtractedOccasion[];
+  cycle: ExtractedCycle | null;
 };
 
 const EMPTY_FACTS: ExtractedFacts = {
@@ -27,6 +35,7 @@ const EMPTY_FACTS: ExtractedFacts = {
   gifts: [],
   trips: [],
   occasions: [],
+  cycle: null,
 };
 
 export function parseExtraction(raw: string): ExtractedFacts {
@@ -37,7 +46,7 @@ export function parseExtraction(raw: string): ExtractedFacts {
 
     const parsed = JSON.parse(raw.substring(start, end + 1));
     const result: ExtractedFacts = { ...EMPTY_FACTS };
-    type StringKey = Exclude<keyof ExtractedFacts, 'occasions'>;
+    type StringKey = Exclude<keyof ExtractedFacts, 'occasions' | 'cycle'>;
     const keys: StringKey[] = [
       'likes', 'dislikes', 'jokes', 'dreams', 'moods', 'events', 'gifts', 'trips'
     ];
@@ -63,6 +72,20 @@ export function parseExtraction(raw: string): ExtractedFacts {
           month: o.month as number,
           day: o.day as number,
         }));
+    }
+
+    // The cycle is a single state, not a list: one optional offset, capped
+    // at a quarter so a garbled number can never land a start date years
+    // back. Anything else — absent, null, a string, a fraction, negative —
+    // leaves the stored record untouched.
+    const cycle = parsed.cycle;
+    if (
+      typeof cycle === 'object' && cycle !== null &&
+      Number.isInteger((cycle as Record<string, unknown>).daysAgo) &&
+      ((cycle as Record<string, unknown>).daysAgo as number) >= 0 &&
+      ((cycle as Record<string, unknown>).daysAgo as number) <= 90
+    ) {
+      result.cycle = { daysAgo: (cycle as Record<string, unknown>).daysAgo as number };
     }
 
     for (const key of keys) {
