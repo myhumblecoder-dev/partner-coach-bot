@@ -74,4 +74,16 @@ describe('POST /api/telegram', () => {
     expect(sendMessage).toHaveBeenCalledWith('6300285519', 'Question 2?')
     expect(respond).not.toHaveBeenCalled()
   })
+
+  it('turns away a chat that may not link, without coaching it', async () => {
+    vi.mocked(ensureLinkedProfile).mockResolvedValue(null)
+
+    const res = await POST(request(UPDATE, 'hooksecret'))
+
+    expect(res.status).toBe(200)
+    expect(sendMessage).toHaveBeenCalledWith('6300285519', 'This bot is private.')
+    // The study never gets built, consulted, or narrated.
+    expect(onboardingStep).not.toHaveBeenCalled()
+    expect(respond).not.toHaveBeenCalled()
+  })
 })

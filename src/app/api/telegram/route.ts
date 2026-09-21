@@ -22,7 +22,14 @@ export async function POST(request: Request): Promise<Response> {
   const { chatId, text } = parsed;
 
   // First contact begins onboarding — nobody is told to "link an account".
-  const { profileId } = await ensureLinkedProfile(chatId);
+  // A chat that is not allowed gets one flat line and nothing else: no
+  // coach, no profile, no extraction.
+  const link = await ensureLinkedProfile(chatId);
+  if (!link) {
+    await sendMessage(chatId, 'This bot is private.');
+    return new Response(JSON.stringify({ ok: true }), { status: 200 });
+  }
+  const { profileId } = link;
 
   const onboarding = await onboardingStep(profileId, text);
   if (onboarding !== null) {
