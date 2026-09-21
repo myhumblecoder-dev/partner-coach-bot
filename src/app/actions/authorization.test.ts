@@ -9,11 +9,6 @@ import { updateEntry, deleteEntry } from './editEntry'
 import { rateGift } from './rateGift'
 import { saveTimezone } from './saveTimezone'
 
-const model = () => ({
-  create: vi.fn(), update: vi.fn(), delete: vi.fn(), deleteMany: vi.fn(),
-  upsert: vi.fn(), updateMany: vi.fn(),
-})
-
 vi.mock('@/lib/db', () => ({
   prisma: {
     profile: { create: vi.fn(), update: vi.fn(), delete: vi.fn(), deleteMany: vi.fn(), upsert: vi.fn(), updateMany: vi.fn() },
