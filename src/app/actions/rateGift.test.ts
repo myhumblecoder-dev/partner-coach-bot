@@ -2,13 +2,17 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { prisma } from '@/lib/db'
 import { revalidatePath } from 'next/cache'
 import { rateGift } from './rateGift'
+import { isSignedIn } from '@/lib/auth/session'
 
 vi.mock('@/lib/db', () => ({ prisma: { gift: { update: vi.fn() } } }))
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }))
 
+vi.mock('@/lib/auth/session', () => ({ isSignedIn: vi.fn() }))
+
 describe('rateGift', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(isSignedIn).mockResolvedValue(true)
     vi.mocked(prisma.gift.update).mockResolvedValue({} as never)
   })
 

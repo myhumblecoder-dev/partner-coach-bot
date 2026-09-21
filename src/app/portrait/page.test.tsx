@@ -2,12 +2,15 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { prisma } from '@/lib/db'
 import { getPortrait, type Portrait } from '@/lib/portrait/load'
+import { isSignedIn } from '@/lib/auth/session'
 import PortraitPage from './page'
 
 vi.mock('@/lib/db', () => ({
   prisma: { profile: { findFirst: vi.fn() } },
 }))
 vi.mock('@/lib/portrait/load', () => ({ getPortrait: vi.fn() }))
+vi.mock('@/lib/auth/session', () => ({ isSignedIn: vi.fn() }))
+vi.mock('next/navigation', () => ({ redirect: vi.fn(() => { throw new Error('NEXT_REDIRECT') }) }))
 // The metrics and PortraitView are pure local modules — NOT mocked; the page
 // test proves the real wiring end to end.
 
@@ -25,7 +28,10 @@ const empty: Portrait = {
 }
 
 describe('PortraitPage', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(isSignedIn).mockResolvedValue(true)
+  })
 
   it('renders the empty state without a profile', async () => {
     vi.mocked(prisma.profile.findFirst).mockResolvedValue(null)

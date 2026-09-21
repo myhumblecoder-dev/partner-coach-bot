@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/db'
 import { revalidatePath } from 'next/cache'
+import { isSignedIn } from '@/lib/auth/session'
 
 export type EditableField = 'likes' | 'dislikes' | 'jokes' | 'dreams' | 'trips' | 'gifts'
 
@@ -39,6 +40,9 @@ export async function updateEntry(
   id: string,
   text: string
 ): Promise<{ ok: boolean }> {
+  // Public POST endpoint: authorize before touching anything.
+  if (!(await isSignedIn())) return { ok: false }
+
   const trimmed = text.trim()
   if (!known(field) || !trimmed) return { ok: false }
   await TABLE[field](id, trimmed)
@@ -50,6 +54,9 @@ export async function deleteEntry(
   field: EditableField,
   id: string
 ): Promise<{ ok: boolean }> {
+  // Public POST endpoint: authorize before touching anything.
+  if (!(await isSignedIn())) return { ok: false }
+
   if (!known(field)) return { ok: false }
   try {
     await DELETE[field](id)

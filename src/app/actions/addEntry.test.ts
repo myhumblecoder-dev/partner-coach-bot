@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { addEntry, type EntryField } from './addEntry'
 import { prisma } from '@/lib/db'
 import { revalidatePath } from 'next/cache'
+import { isSignedIn } from '@/lib/auth/session'
 
 vi.mock('@/lib/db', () => ({
   prisma: {
@@ -17,9 +18,12 @@ vi.mock('next/cache', () => ({
   revalidatePath: vi.fn(),
 }))
 
+vi.mock('@/lib/auth/session', () => ({ isSignedIn: vi.fn() }))
+
 describe('addEntry', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(isSignedIn).mockResolvedValue(true)
   })
 
   it('creates a like', async () => {

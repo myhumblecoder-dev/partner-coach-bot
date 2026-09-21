@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/db'
 import { revalidatePath } from 'next/cache'
+import { isSignedIn } from '@/lib/auth/session'
 
 const FIELDS = ['likes', 'dislikes', 'jokes', 'dreams', 'gifts'] as const
 export type EntryField = typeof FIELDS[number]
@@ -11,6 +12,9 @@ export async function addEntry(
   field: EntryField,
   text: string
 ): Promise<{ ok: boolean }> {
+  // Public POST endpoint: authorize before touching anything.
+  if (!(await isSignedIn())) return { ok: false }
+
   const trimmedText = text.trim()
 
   if (!trimmedText || !FIELDS.includes(field)) {

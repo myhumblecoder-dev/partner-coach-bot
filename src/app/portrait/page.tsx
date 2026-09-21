@@ -5,10 +5,17 @@ import { daysSinceLastTouch } from '@/lib/metrics/recency'
 import { giftStats } from '@/lib/metrics/gifts'
 import { moodBuckets } from '@/lib/metrics/moodBuckets'
 import PortraitView from '@/components/PortraitView'
+import { redirect } from 'next/navigation'
+import { isSignedIn } from '@/lib/auth/session'
 
 export const dynamic = 'force-dynamic'
 
 export default async function PortraitPage() {
+  // Defence in depth. The middleware now guards this route, but middleware
+  // is one bypassable layer (Next has shipped middleware-bypass CVEs) and
+  // this page is the whole study — every like, mood, gift and dream.
+  if (!(await isSignedIn())) redirect('/api/auth/signin')
+
   // Single-user app: the first profile is the profile.
   const profile = await prisma.profile.findFirst()
   const portrait = profile ? await getPortrait(profile.id) : null
