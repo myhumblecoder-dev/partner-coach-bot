@@ -27,7 +27,6 @@ jobs:
       EMAIL_FROM: ci@example.com
       NEXTAUTH_URL: http://localhost:3000
       AUTH_SECRET: ci-build-placeholder-not-a-secret
-      NEXTAUTH_SECRET: ci-build-placeholder-not-a-secret
     steps:
       - uses: actions/checkout@v4
       # No `version:` here on purpose — package.json's "packageManager" key
