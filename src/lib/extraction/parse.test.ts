@@ -29,6 +29,7 @@ describe('parse', () => {
       gifts: [],
       trips: [],
       occasions: [],
+      cycle: null,
     }
     expect(parseExtraction('no json here')).toEqual(emptyResult)
     expect(parseExtraction('{broken')).toEqual(emptyResult)
@@ -71,5 +72,39 @@ describe('parse', () => {
     expect(result.occasions).toEqual([
       { kind: 'birthday', label: 'her birthday', month: 9, day: 4 },
     ])
+  })
+})
+
+describe('parseExtraction — the cycle', () => {
+  it('reads an explicit start offset', () => {
+    const result = parseExtraction('{"cycle": {"daysAgo": 3}}')
+
+    expect(result.cycle).toEqual({ daysAgo: 3 })
+  })
+
+  it('zero is a real answer, not a missing one', () => {
+    const result = parseExtraction('{"cycle": {"daysAgo": 0}}')
+
+    expect(result.cycle).toEqual({ daysAgo: 0 })
+  })
+
+  it('is null when the key is absent', () => {
+    const result = parseExtraction('{"likes": ["tea"]}')
+
+    expect(result.cycle).toBeNull()
+  })
+
+  it('is null when the model declines it', () => {
+    expect(parseExtraction('{"cycle": null}').cycle).toBeNull()
+  })
+
+  it('rejects anything that is not a whole non-negative day count', () => {
+    // A date string, a negative, a fraction, a bare number, an out-of-range
+    // offset — each would otherwise become a wrong start date, silently.
+    expect(parseExtraction('{"cycle": {"daysAgo": "2026-09-14"}}').cycle).toBeNull()
+    expect(parseExtraction('{"cycle": {"daysAgo": -1}}').cycle).toBeNull()
+    expect(parseExtraction('{"cycle": {"daysAgo": 2.5}}').cycle).toBeNull()
+    expect(parseExtraction('{"cycle": 4}').cycle).toBeNull()
+    expect(parseExtraction('{"cycle": {"daysAgo": 400}}').cycle).toBeNull()
   })
 })

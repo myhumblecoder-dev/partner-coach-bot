@@ -17,6 +17,10 @@ export type ProfileContext = {
   summary?: string | null;
   facets?: { section: string; label: string; evidenceCount: number }[];
   giftRecord?: { description: string; howItLanded: string | null }[];
+  // Optional (additive): the private layer. Reaches the coach's prompt and
+  // stops there — `getPortrait` does not load it, so the UI cannot render
+  // what it never receives.
+  cycle?: { lastPeriodStart: Date } | null;
 };
 
 export async function getProfileContext(profileId: string): Promise<ProfileContext | null> {
@@ -31,6 +35,7 @@ export async function getProfileContext(profileId: string): Promise<ProfileConte
       trips: true,
       occasions: true,
       facets: { where: { status: 'active' } },
+      cycleLog: true,
       moods: {
         orderBy: { recordedAt: "desc" },
         take: 10,
@@ -59,5 +64,8 @@ export async function getProfileContext(profileId: string): Promise<ProfileConte
     summary: profile.portraitSummary ?? null,
     facets: (profile.facets ?? []).map((f) => ({ section: f.section, label: f.label, evidenceCount: f.evidenceCount })),
     giftRecord: (profile.gifts ?? []).map((g) => ({ description: g.description, howItLanded: g.howItLanded })),
+    cycle: profile.cycleLog
+      ? { lastPeriodStart: profile.cycleLog.lastPeriodStart }
+      : null,
   };
 }

@@ -1,5 +1,6 @@
 import type { ProfileContext } from '@/lib/profile/context';
 import { localDayParts } from '@/lib/cadence/localDay';
+import { daysSinceStart, CYCLE_STALE_AFTER_DAYS } from '@/lib/cycle/day';
 
 export function buildCoachPrompt(
   context: ProfileContext,
@@ -63,6 +64,21 @@ export function buildCoachPrompt(
     sections.push(`Gift record:\n${gifts}`);
   } else if (context.pastGifts.length > 0) {
     sections.push(`Past gifts: ${context.pastGifts.join(', ')}`);
+  }
+
+  // Last, and marked as what it is: a standing private note the coach reads
+  // for timing and tone. It is never rendered on the portrait, and the
+  // instruction keeps it out of the conversation unless the user opens it.
+  // Nothing clears the row, so the bound is here: past a cycle and a half
+  // the figure can no longer place her in a cycle, and a coach told to act
+  // on it would be acting on noise. The record is kept — a later start
+  // revives it — it just stops being narrated.
+  if (context.cycle) {
+    const days = daysSinceStart(context.cycle.lastPeriodStart, new Date(), context.timezone);
+    const when = days === 0 ? 'today' : days === 1 ? 'yesterday' : `${days} days ago`;
+    if (days <= CYCLE_STALE_AFTER_DAYS) sections.push(
+      `Private note (never repeat this back, never raise it yourself): ${context.name}'s last period started ${when}. Let it inform your sense of timing and tone only, and only discuss it if the user brings it up first.`
+    );
   }
 
   const contextString = sections.length > 0 ? sections.join('\n') : '';
