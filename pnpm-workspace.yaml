@@ -1,3 +1,21 @@
 ignoredBuiltDependencies:
   - sharp
   - unrs-resolver
+
+# pnpm 10 no longer reads the "pnpm" field in package.json — it warns
+# "The following keys were ignored: pnpm.overrides" on every install — so
+# the deepmerge-ts override below had silently stopped applying. Overrides
+# live here now, and these actually take effect.
+overrides:
+  deepmerge-ts: '>=8.0.0'
+  # Transitive, so a direct bump cannot reach them.
+  # js-yaml: CPU exhaustion via merge keys (GHSA-2883-xcg3-v3hh), pulled in
+  # by eslint > @eslint/eslintrc, which asks for ^4.1.0. Pinned inside 4.x
+  # on purpose: a bare '>=4.3.2' resolves to js-yaml 5.x and hands eslint a
+  # major it never agreed to.
+  js-yaml: '^4.3.2'
+  # sharp: libheif vulnerabilities (GHSA-rgj7-g3m4-5g8c), pulled in by next
+  # for image optimization. next 16.3.3 asks for ^0.35.3, so this stays
+  # inside the range next already accepts.
+  sharp: '^0.35.4'
+
