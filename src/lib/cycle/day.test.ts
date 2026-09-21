@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest'
-import { startDateFromDaysAgo, daysSinceStart } from './day'
+import {
+  startDateFromDaysAgo,
+  daysSinceStart,
+  CYCLE_STALE_AFTER_DAYS,
+  CYCLE_CORRECTION_WINDOW_DAYS,
+} from './day'
 
 describe('startDateFromDaysAgo', () => {
   it('zero days ago is UTC midnight of today', () => {
@@ -67,5 +72,18 @@ describe('daysSinceStart', () => {
     const now = new Date('2026-09-21T13:45:00Z')
 
     expect(daysSinceStart(start, now)).toBe(0)
+  })
+})
+
+describe('the bounds', () => {
+  it('staleness is a cycle and a half, and under the parser cap', () => {
+    // A record the parser would still accept on the way in (90 days) must
+    // not still be narrated on the way out.
+    expect(CYCLE_STALE_AFTER_DAYS).toBe(45)
+    expect(CYCLE_STALE_AFTER_DAYS).toBeLessThan(90)
+  })
+
+  it('the correction window is short enough to mean "just now"', () => {
+    expect(CYCLE_CORRECTION_WINDOW_DAYS).toBeLessThanOrEqual(2)
   })
 })

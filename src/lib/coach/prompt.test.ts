@@ -160,6 +160,33 @@ describe('prompt', () => {
       expect(prompt).toContain('started yesterday')
     })
 
+    it('goes quiet once the record can no longer place her in a cycle', () => {
+      at('2026-09-21T13:45:00Z')
+
+      // Nothing clears the row, so a start mentioned once in the spring
+      // would otherwise still be narrated as "started 150 days ago".
+      const stale = buildCoachPrompt(
+        { ...base, cycle: { lastPeriodStart: new Date('2026-04-24T00:00:00Z') } },
+        [], 'hello')
+
+      expect(stale).not.toContain('period')
+      expect(stale).toBe(buildCoachPrompt(base, [], 'hello'))
+    })
+
+    it('holds the note right up to the bound', () => {
+      at('2026-09-21T13:45:00Z')
+
+      const atBound = buildCoachPrompt(
+        { ...base, cycle: { lastPeriodStart: new Date('2026-08-07T00:00:00Z') } },
+        [], 'hello')
+      const pastBound = buildCoachPrompt(
+        { ...base, cycle: { lastPeriodStart: new Date('2026-08-06T00:00:00Z') } },
+        [], 'hello')
+
+      expect(atBound).toContain('started 45 days ago')
+      expect(pastBound).not.toContain('period')
+    })
+
     it('says nothing at all when nothing is logged', () => {
       const withoutField = buildCoachPrompt(base, [], 'hello')
       const withNull = buildCoachPrompt({ ...base, cycle: null }, [], 'hello')

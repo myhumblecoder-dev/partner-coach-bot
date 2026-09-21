@@ -2,6 +2,23 @@ import { localDayParts } from '@/lib/cadence/localDay'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
+/** Past this, the record can no longer place her in a cycle — a cycle and a
+ * half. Nothing clears the row, so without a read-side bound a start
+ * mentioned once in January is still being narrated to the coach in June
+ * ("started 150 days ago") as if it meant something. The coach is better
+ * told nothing than told a number that cannot be acted on. */
+export const CYCLE_STALE_AFTER_DAYS = 45
+
+/** How long a correction may still move the stored date BACKWARDS.
+ *
+ * Reports otherwise only move forward, which alone would make a bad date
+ * permanent: the model hears "she started last Tuesday" as today, and the
+ * user's "no, six days ago" computes an older date and is silently
+ * dropped until the next cycle start happens to be reported. A correction
+ * arrives close behind the mistake, so write recency — not the age of the
+ * date itself — is what opens the door. */
+export const CYCLE_CORRECTION_WINDOW_DAYS = 1
+
 /** UTC midnight of the profile's local calendar day.
  *
  * The repo's shape for "a day, not a moment" — the cron's `ranOn` is built
