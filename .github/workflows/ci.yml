@@ -16,6 +16,18 @@ jobs:
       # satisfies the load so install/lint/build/test can run on CI (which has
       # no real database). Matches the postgresql provider the stack provisions.
       DATABASE_URL: postgresql://user:password@localhost:5432/db
+      # These were a committed .env until the file was untracked. `next build`
+      # collects page data for /api/auth/[...nextauth], which constructs the
+      # Nodemailer provider and throws "Nodemailer requires a `server`
+      # configuration" without EMAIL_SERVER — so the build needs them present,
+      # not real. Dummies live here, where a build placeholder cannot be
+      # mistaken for a deployable secret; production reads the real values
+      # from the Vercel project env.
+      EMAIL_SERVER: smtp://user:pass@localhost:1025
+      EMAIL_FROM: ci@example.com
+      NEXTAUTH_URL: http://localhost:3000
+      AUTH_SECRET: ci-build-placeholder-not-a-secret
+      NEXTAUTH_SECRET: ci-build-placeholder-not-a-secret
     steps:
       - uses: actions/checkout@v4
       # No `version:` here on purpose — package.json's "packageManager" key
