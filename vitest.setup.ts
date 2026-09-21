@@ -11,6 +11,5 @@ import '@testing-library/jest-dom/vitest';
 // an integration test, not this.
 process.env.EMAIL_SERVER ??= 'smtp://user:pass@localhost:587';
 process.env.EMAIL_FROM ??= 'noreply@localhost';
-process.env.NEXTAUTH_SECRET ??= 'test-secret-not-used-outside-tests';
 process.env.NEXTAUTH_URL ??= 'http://localhost:3000';
 process.env.AUTH_SECRET ??= 'test-secret-not-used-outside-tests';
